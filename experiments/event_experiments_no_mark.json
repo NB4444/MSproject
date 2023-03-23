@@ -1,0 +1,11 @@
+{
+    "experiment_name": "event_experiments_no_mark",
+    "time_limit": 15,
+    "runs": 5,
+    "gpu": "A4000",
+    "threads": 8,
+    "exec": "traccc/build/bin/traccc_throughput_mt_cuda",
+    "events": [1000, 10000, 100000],
+    "input_dir": "tml_full/ttbar_mu300",
+    "marker": false
+}

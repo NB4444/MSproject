@@ -1,0 +1,9 @@
+*.txt
+*.data
+.vscode/
+traccc/
+relevant/
+graphs/
+example/
+data/
+build/

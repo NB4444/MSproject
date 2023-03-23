@@ -1,0 +1,11 @@
+{
+    "experiment_name": "gpus_experiment",
+    "time_limit": 15,
+    "runs": 5,
+    "gpu": ["A4000", "A6000"],
+    "threads": 8,
+    "exec": "traccc/build/bin/traccc_throughput_mt_cuda",
+    "events": 100000,
+    "input_dir": "tml_full/ttbar_mu300",
+    "marker": true
+}
