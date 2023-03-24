@@ -29,6 +29,7 @@ def run(exp, node=None, experiment=None, time_limit=None, gpu=None, input_dir=No
 #SBATCH -C {exp['gpu'] if gpu == None else gpu}
 #SBATCH --gres=gpu:1
 {f"#SBATCH --nodelist={node}" if node is not None else ""}
+{"#SBATCH -p fatq" if (exp['gpu'] == "A100" and gpu == None) or gpu == "A100" else ""}
 
 module load cuda11.7/toolkit
 

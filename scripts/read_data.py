@@ -136,17 +136,21 @@ def bar_plot_energy_cpu(data, args):
     exp = []
     sorted_keys = sort_keys(data.keys())
     inner_keys = data[sorted_keys[0]][0].keys()
+    energy_norm = []
 
     for key in sorted_keys:
         exp.append(key)
         areas = []
         energy = []
+
         for k in inner_keys:
             areas.append(k)
             l = [dic[k].energy_all for dic in data[key] if dic[k].energy_all != 281475000000000.0]
             energy.append(np.mean(l))
+        energy_norm.append(energy / np.sum(energy))
         all.append(energy)
     d = np.transpose(all)
+    d_norm = np.transpose(energy_norm)
 
     width = 0.5
     bottom = np.zeros(len(exp))
@@ -161,6 +165,21 @@ def bar_plot_energy_cpu(data, args):
     plt.plot()
     plt.tight_layout()
     plt.savefig(args.output + "energy_cpu.pdf")
+    plt.clf()
+
+    width = 0.5
+    bottom = np.zeros(len(exp))
+    for i, weight in enumerate(d_norm):
+        plt.bar(exp, weight, width=width, label=areas[i], bottom=bottom)
+        bottom += weight
+
+    plt.xticks(rotation=30)
+    plt.legend()
+    plt.ylabel("Energy normalized")
+    plt.xlabel("Input")
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "energy_cpu_norm.pdf")
     plt.clf()
 
 def bar_plot_avg_power_cpu(data, args):
@@ -465,19 +484,27 @@ def bar_plot_runtime(cpu, gpu, args):
     plt.savefig(args.output + "runtime.pdf")
     plt.clf()
 
+def get_iterations_change(list):
+    first = list[0]
+    for i, l in enumerate(list[1:]):
+        if l > first:
+            return i
+    return 0
+
+
 def bar_plot_average_power_gpu(data, args):
+    sorted_keys = sort_keys(data.keys())
     exp = []
     power_mean = []
     power_std = []
-    sorted_keys = sort_keys(data.keys())
+
     for key in sorted_keys:
         exp.append(key)
-        energy = []
+        power = []
         for df in data[key]:
-            dur = (list(df['duration'])[-1]) / 1000
-            energy.append(calculate_energy(df)/ dur)
-        power_mean.append(np.mean(energy))
-        power_std.append(np.std(energy))
+            power.append(np.mean(list(df['power'])))
+        power_mean.append(np.mean(power))
+        power_std.append(np.std(power))
 
     plt.xticks(rotation=30)
     plt.bar(exp, power_mean, yerr=power_std)
@@ -489,9 +516,36 @@ def bar_plot_average_power_gpu(data, args):
     plt.savefig(args.output + "average_power_gpu.pdf")
     plt.clf()
 
+
+    exp = []
+    power_mean = []
+    power_std = []
+    for key in sorted_keys:
+        exp.append(key)
+        power = []
+        for df in data[key]:
+            change_i = get_iterations_change(df["graphics"])
+            if (change_i == 0):
+                print("No frequency change when events start")
+            power.append(np.mean(list(df['power'])[change_i:]))
+
+        power_mean.append(np.mean(power))
+        power_std.append(np.std(power))
+
+    plt.xticks(rotation=30)
+    plt.bar(exp, power_mean, yerr=power_std)
+    plt.tight_layout()
+    plt.ylabel("Average Power (W)")
+    plt.xlabel("Input")
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "average_power_during_events_gpu.pdf")
+    plt.clf()
+
 def bar_plot_runtime_cpu(data, args):
     all = []
     exp = []
+    runtime_norm = []
 
     sorted_keys = sort_keys(data.keys())
     inner_keys = data[sorted_keys[0]][0].keys()
@@ -504,7 +558,9 @@ def bar_plot_runtime_cpu(data, args):
             areas.append(k)
             runtime.append(np.mean([dic[k].runtimes for dic in data[key]]))
         all.append(runtime)
+        runtime_norm.append(runtime / np.sum(runtime))
     d = np.transpose(all)
+    d_norm = np.transpose(runtime_norm)
 
     width = 0.5
     bottom = np.zeros(len(exp))
@@ -518,6 +574,22 @@ def bar_plot_runtime_cpu(data, args):
     plt.xlabel("Input")
     plt.plot()
     plt.savefig(args.output + "runtime_cpu.pdf")
+    plt.clf()
+
+    width = 0.5
+    bottom = np.zeros(len(exp))
+
+    for i, weight in enumerate(d_norm):
+        plt.bar(exp, weight, width=width, label=areas[i], bottom=bottom)
+        bottom += weight
+
+    plt.xticks(rotation=30)
+    plt.legend()
+    plt.ylabel("Runtime normalized")
+    plt.xlabel("Input")
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "runtime_cpu_norm.pdf")
     plt.clf()
 
 def read_data_gpu(input):
