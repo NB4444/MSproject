@@ -5,7 +5,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-import math
 
 class Table:
     name = ""
@@ -115,6 +114,17 @@ def power_plot_multiple_runs(data, args):
         plt.ylabel("Power(W)")
         plt.tight_layout()
         plt.savefig(args.output + f"power_{key}.pdf")
+        plt.clf()
+
+    for key in data.keys():
+        for i, df in enumerate(data[key]):
+            l = np.array(df["power"])
+            plt.plot(df["duration"], l - l[0], label="Frequency")
+        plt.ylim(0)
+        plt.xlabel("Time(ms)")
+        plt.ylabel("Power(W)")
+        plt.tight_layout()
+        plt.savefig(args.output + f"power_shifted_{key}.pdf")
         plt.clf()
 
 def mem_freq_multiple_runs(data, args):
@@ -533,6 +543,7 @@ def bar_plot_average_power_gpu(data, args):
         power_std.append(np.std(power))
 
     plt.xticks(rotation=30)
+    print(power_mean)
     plt.bar(exp, power_mean, yerr=power_std)
     plt.tight_layout()
     plt.ylabel("Average Power (W)")
