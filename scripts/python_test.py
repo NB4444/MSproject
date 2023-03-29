@@ -2,44 +2,121 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy.polynomial import Polynomial as P
 
-power = np.array([69.19915148538834, 73.85515574887992, 88.80004531127683, 108.11312535830946, 119.39331300253284, 127.34891247103539, 135.39999663238834, 131.27172270949356]) #140.00 max
-powerA2 = np.array([23.05022378506336, 25.420059552541744, 28.08803248747237, 30.104399796987355, 32.131874884957405, 35.413288082101026, 39.78031785493163, 45.3196376486497]) #60.00 max
-powerA100 = np.array([66.84023795399116, 70.10372223432057, 74.90626433401941, 80.8033836370964, 84.68810099633825, 96.03202304502588, 113.3332478303856, 138.53872289602504]) #250
-powerA6000 = np.array([96.56324244103033, 104.31696574410243, 118.16806945830271, 130.98906294037735, 143.01341202279326, 165.70648926966473, 185.47145238651296, 217.5334262628919]) #300
+def power_func():
+    power = np.array([69.19915148538834, 73.85515574887992, 88.80004531127683, 108.11312535830946, 119.39331300253284, 127.34891247103539, 135.39999663238834, 131.27172270949356]) #140.00 max
+    powerA2 = np.array([23.05022378506336, 25.420059552541744, 28.08803248747237, 30.104399796987355, 32.131874884957405, 35.413288082101026, 39.78031785493163, 45.3196376486497]) #60.00 max
+    powerA100 = np.array([66.84023795399116, 70.10372223432057, 74.90626433401941, 80.8033836370964, 84.68810099633825, 96.03202304502588, 113.3332478303856, 138.53872289602504]) #250
+    powerA6000 = np.array([96.56324244103033, 104.31696574410243, 118.16806945830271, 130.98906294037735, 143.01341202279326, 165.70648926966473, 185.47145238651296, 217.5334262628919]) #300
+    mu = [20,40,60,80,100,140,200,300]
+
+
+    plt.plot(mu, power, label="A4000")
+    plt.plot(mu, powerA2, label="A2")
+    plt.plot(mu, powerA100, label="A100")
+    plt.plot(mu, powerA6000, label="A6000")
+
+    p = P.fit(mu, power, 2)
+    print(p)
+    fx, fy = p.linspace(100)
+    plt.plot(fx, fy)
+
+    p = P.fit(mu, powerA2, 2)
+    print(p)
+    fx, fy = p.linspace(100)
+    plt.plot(fx, fy)
+
+    p = P.fit(mu, powerA100, 2)
+    print(p)
+    fx, fy = p.linspace(100)
+    plt.plot(fx, fy)
+
+    p = P.fit(mu, powerA6000, 2)
+    print(p)
+    fx, fy = p.linspace(100)
+    plt.plot(fx, fy)
+    plt.legend()
+    plt.show()
+    plt.cla()
+
+    # plt.plot(mu, power/140, label="A4000")
+    # plt.plot(mu, powerA2/60, label="A2")
+    # plt.plot(mu, powerA100/250, label="A100")
+    # plt.plot(mu, powerA6000/300, label="A6000")
+    # plt.legend()
+    # plt.show()
+
+def diff(pred, measured):
+    return np.mean((pred-measured)/measured)
+
 mu = [20,40,60,80,100,140,200,300]
+events = 100000
+energy_A4000 = [5185.141970000124, 6605.479396000158, 7541.046152000001, 10284.4495380003, 12313.63820200063, 18743.956063998965, 30710.728255998933, 50585.86805199575]
+power_A4000 = [69.49206488155338, 75.23897785744643, 86.63455776083732, 109.22209721190112, 116.33874833827353, 129.8560494147376, 135.63421362582983, 131.28197788971062]
+idle_power_A4000 = 37
+event_time_A4000 = np.array([56.30744, 69.99705250000001, 69.5890475, 77.44354750000001, 89.640715, 125.98794249999997, 207.09533249999998, 362.08874249999997])/events
+full_time_A4000 = np.array([79.35139999999998, 93.58619999999999, 93.7246, 102.5918, 115.7058, 155.27519999999998, 239.67919999999998, 401.6022])
+idle_time_A4000 = full_time_A4000 - event_time_A4000
 
+energy_calc_A4000 = idle_time_A4000 * idle_power_A4000 + events * (power_A4000 * event_time_A4000)
+print(diff(energy_calc_A4000, energy_A4000))
 
-plt.plot(mu, power, label="A4000")
-plt.plot(mu, powerA2, label="A2")
-plt.plot(mu, powerA100, label="A100")
-plt.plot(mu, powerA6000, label="A6000")
-
-p = P.fit(mu, power, 2)
-print(p)
-fx, fy = p.linspace(100)
-plt.plot(fx, fy)
-
-p = P.fit(mu, powerA2, 2)
-print(p)
-fx, fy = p.linspace(100)
-plt.plot(fx, fy)
-
-p = P.fit(mu, powerA100, 2)
-print(p)
-fx, fy = p.linspace(100)
-plt.plot(fx, fy)
-
-p = P.fit(mu, powerA6000, 2)
-print(p)
-fx, fy = p.linspace(100)
-plt.plot(fx, fy)
+plt.plot(mu, energy_calc_A4000, label="Calculated A4000")
+plt.plot(mu, energy_A4000, label="Measured A4000")
 plt.legend()
 plt.show()
 plt.cla()
 
-# plt.plot(mu, power/140, label="A4000")
-# plt.plot(mu, powerA2/60, label="A2")
-# plt.plot(mu, powerA100/250, label="A100")
-# plt.plot(mu, powerA6000/300, label="A6000")
-# plt.legend()
-# plt.show()
+events = 100000
+energy_A6000 = [7351.256133999766, 9283.313198000007, 10302.767588000093, 12469.84144999973, 15130.724639999866, 20261.2493079996, 33893.53485400097, 67198.56164000076]
+power_A6000 = [96.56324244103033, 104.31696574410243, 118.16806945830271, 130.98906294037735, 143.01341202279326, 165.70648926966473, 185.47145238651296, 217.5334262628919]
+idle_power_A6000 = 68
+event_time_A6000 = np.array([56.2778525, 69.29605000000001, 67.38507, 75.79854750000001, 86.28865, 102.46350500000001, 161.6880775, 288.34761000000003])/events
+full_time_A6000 = np.array([79.0016, 92.5874, 92.0522, 101.23740000000001, 112.9348, 131.34619999999998, 194.0052, 324.146])
+idle_time_A6000 = full_time_A6000 - event_time_A6000
+
+energy_calc_A6000 = idle_time_A6000 * idle_power_A6000 + events * (power_A6000 * event_time_A6000)
+print(diff(energy_calc_A6000, energy_A6000))
+
+plt.plot(mu, energy_calc_A6000, label="Calculated A6000")
+plt.plot(mu, energy_A6000, label="Measured A6000")
+
+plt.legend()
+plt.show()
+plt.cla()
+
+events = 10000
+energy_A2 = [422.07568600000604, 536.4031079999992, 675.0530920000008, 882.441662000016, 1156.4253620000054, 1617.237827999978, 2678.3386239999445, 5392.385639999849]
+power_A2 = [23.05022378506336, 25.420059552541744, 28.08803248747237, 30.104399796987355, 32.131874884957405, 35.413288082101026, 39.78031785493163, 45.3196376486497]
+idle_power_A2 = 18
+event_time_A2 = np.array([5.8680449999999995, 7.573557500000001, 9.5000175, 13.51637, 19.04122, 26.5359575, 45.675327499999995, 91.8781775])/events
+full_time_A2 = np.array([18.220399999999998, 20.952800000000003, 23.808200000000003, 28.955400000000004, 35.5318, 44.90560000000001, 66.09360000000001, 116.9])
+idle_time_A2 = full_time_A2 - event_time_A2
+
+energy_calc_A2 = idle_time_A2 * idle_power_A2 + events * (power_A2 * event_time_A2)
+print(diff(energy_calc_A2, energy_A2))
+
+plt.plot(mu, energy_calc_A2, label="Calculated A2")
+plt.plot(mu, energy_A2, label="Measured A2")
+
+plt.legend()
+plt.show()
+plt.cla()
+
+
+events = 100000
+energy_A100 = [5367.470899999932, 6732.353379999977, 7956.131400000054, 9390.633409999891, 10344.794649999783, 13524.960530000262, 21211.83621000005, 41903.6883200014]
+power_A100 = [66.84023795399116, 70.10372223432057, 74.90626433401941, 80.8033836370964, 84.68810099633825, 96.03202304502588, 113.3332478303856, 138.53872289602504]
+idle_power_A100 = 37
+event_time_A100 = np.array([60.5702, 75.4995375, 88.713975, 97.97291249999999, 104.27664999999999, 122.782425, 166.75109999999998, 283.92148749999996])/events
+full_time_A100 = np.array([85.671, 102.112, 113.217, 124.225, 131.003, 151.574, 200.629, 320.221])
+idle_time_A100 = full_time_A100 - event_time_A100
+
+energy_calc_A100 = idle_time_A100 * idle_power_A100 + events * (power_A100 * event_time_A100)
+print(diff(energy_calc_A100, energy_A100))
+
+plt.plot(mu, energy_calc_A100, label="Calculated A100")
+plt.plot(mu, energy_A100, label="Measured A100")
+
+plt.legend()
+plt.show()
+plt.cla()

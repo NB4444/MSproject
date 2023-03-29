@@ -281,6 +281,8 @@ def plot_energy_gpu(data, args):
         energy_mean.append(np.mean(energy))
         energy_std.append(np.std(energy))
 
+    print("Energy GPU: ", energy_mean)
+
     plt.xticks(rotation=30)
     plt.bar(exp, energy_mean, yerr=energy_std)
     plt.tight_layout()
@@ -482,6 +484,9 @@ def bar_plot_runtime(cpu, gpu, args):
     plt.savefig(args.output + "runtime_compare.pdf")
     plt.clf()
 
+    print("CPU Runtime: ", cpu_mean)
+    print("GPU Runtime: ", gpu_mean)
+
     plt.bar(ind-width/2, height=cpu_mean, width=width, label="CPU")
     plt.bar(ind+width/2, height=gpu_mean, width=width, label="GPU")
 
@@ -530,20 +535,25 @@ def bar_plot_average_power_gpu(data, args):
     exp = []
     power_mean = []
     power_std = []
+    power_idle_mean = []
     for key in sorted_keys:
         exp.append(key)
         power = []
+        power_idle = []
         for df in data[key]:
             change_i = get_iterations_change(df["graphics"])
             if (change_i == 0):
                 print("No frequency change when events start")
             power.append(np.mean(list(df['power'])[change_i:]))
+            power_idle.append(np.mean(list(df['power'])[:change_i]))
 
+        power_idle_mean.append(np.mean(power_idle))
         power_mean.append(np.mean(power))
         power_std.append(np.std(power))
 
     plt.xticks(rotation=30)
-    print(power_mean)
+    print("Mean power gpu: ", power_mean)
+    print("Average idle power gpu:", power_idle_mean)
     plt.bar(exp, power_mean, yerr=power_std)
     plt.tight_layout()
     plt.ylabel("Average Power (W)")
