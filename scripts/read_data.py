@@ -6,6 +6,27 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
+def get_iterations_change(list):
+    first = list[0]
+    for i, l in enumerate(list[1:]):
+        if l > first:
+            return i
+    return 0
+
+def first_higher_then(list, n):
+    # for A100 it starts on 30% for no reason
+    for i, l in enumerate(list[25:]):
+        if l > n:
+            return i
+    return 0
+
+def get_iterations_change_percentage(list, perc):
+    first = list[0]
+    for i, l in enumerate(list[1:]):
+        if l  > first * (1+perc):
+            return i
+    return 0
+
 class Table:
     name = ""
     energy_cores = []
@@ -212,6 +233,9 @@ def bar_plot_avg_power_cpu(data, args):
 
         all_mean.append(power_all)
         all_std.append(power_std)
+
+    if len(inner_keys) == 1:
+        print(f"Average power CPU: {[l[0] for l in all_mean]}")
     d = np.transpose(all_mean)
     d_std = np.transpose(power_std)
 
@@ -333,6 +357,9 @@ def bar_plot_energy_total(cpu, gpu, program, args):
 
     width = 0.5
     bottom = np.zeros(len(exp))
+
+    print(f"CPU measured energy: {cpu_mean}")
+    print(f"GPU measured energy: {gpu_mean}")
 
     plt.bar(exp, cpu_mean, width=width, label="CPU", bottom=bottom)
     bottom += np.array(cpu_mean)
@@ -457,19 +484,30 @@ def bar_plot_runtime(cpu, gpu, args):
     inner_keys = cpu[sorted_keys[0]][0].keys()
     gpu_mean = []
     cpu_mean = []
+    duration_idle = []
 
     for key in sorted_keys:
         exp.append(key)
         runtime_gpu = []
         runtime_cpu = 0
+        duration_idle_temp = []
         for inner_key in inner_keys:
                 runtime_cpu += np.mean([dic[inner_key].runtimes for dic in cpu[key]])
         for df in gpu[key]:
             runtime_gpu.append(list(df['duration'])[-1] / 1000)
+            if not "util_gpu" in df:
+                change_i = get_iterations_change(df["graphics"])
+                if (change_i == 0):
+                    change_i = get_iterations_change_percentage(df["power"], 0.1)
+            else:
+                change_i = first_higher_then(df["util_gpu"], 5)
+            duration_idle_temp.append(df.get("duration")[change_i])
+
+        duration_idle.append(np.mean(duration_idle_temp)/1000)
         gpu_mean.append(np.mean(runtime_gpu))
         cpu_mean.append(runtime_cpu)
 
-
+    print(f"GPU idle time: {duration_idle}")
     width = 0.4
     ind = np.arange(len(exp))
 
@@ -499,12 +537,6 @@ def bar_plot_runtime(cpu, gpu, args):
     plt.savefig(args.output + "runtime.pdf")
     plt.clf()
 
-def get_iterations_change(list):
-    first = list[0]
-    for i, l in enumerate(list[1:]):
-        if l > first:
-            return i
-    return 0
 
 
 def bar_plot_average_power_gpu(data, args):
@@ -541,9 +573,12 @@ def bar_plot_average_power_gpu(data, args):
         power = []
         power_idle = []
         for df in data[key]:
-            change_i = get_iterations_change(df["graphics"])
-            if (change_i == 0):
-                print("No frequency change when events start")
+            if not "util_gpu" in df:
+                change_i = get_iterations_change(df["graphics"])
+                if (change_i == 0):
+                    change_i = get_iterations_change_percentage(df["power"], 0.1)
+            else:
+                change_i = first_higher_then(df["util_gpu"], 5)
             power.append(np.mean(list(df['power'])[change_i:]))
             power_idle.append(np.mean(list(df['power'])[:change_i]))
 
@@ -561,6 +596,33 @@ def bar_plot_average_power_gpu(data, args):
     plt.plot()
     plt.tight_layout()
     plt.savefig(args.output + "average_power_during_events_gpu.pdf")
+    plt.clf()
+
+def bar_plot_util_gpu(data, args):
+    sorted_keys = sort_keys(data.keys())
+    exp = []
+    util_mean = []
+    util_std = []
+
+    for key in sorted_keys:
+        exp.append(key)
+        util = []
+        for df in data[key]:
+            change_i = first_higher_then(df["util_gpu"], 5)
+            util.append(np.mean(list(df['util_gpu'])[change_i:]))
+
+        util_mean.append(np.mean(util))
+        util_std.append(np.std(util))
+
+    plt.xticks(rotation=30)
+    print("Mean util gpu: ", util_mean)
+    plt.bar(exp, util_mean, yerr=util_std)
+    plt.tight_layout()
+    plt.ylabel("Average utilization GPU (%)")
+    plt.xlabel("Input")
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "average_utilization_gpu.pdf")
     plt.clf()
 
 def bar_plot_runtime_cpu(data, args):
@@ -616,12 +678,15 @@ def bar_plot_runtime_cpu(data, args):
 def read_data_gpu(input):
     df = pd.read_csv(input, delimiter=', ', engine='python', skipfooter=1)
     df = df.drop('index', axis=1)
-    df = df.rename(columns={'power.draw [W]': 'power', 'clocks.current.sm [MHz]': 'sm', 'clocks.current.memory [MHz]' : 'memory', 'clocks.current.graphics [MHz]': 'graphics'})
+    df = df.rename(columns={'power.draw [W]': 'power', 'clocks.current.sm [MHz]': 'sm', 'clocks.current.memory [MHz]' : 'memory', 'clocks.current.graphics [MHz]': 'graphics', 'utilization.gpu [%]': 'util_gpu', 'utilization.memory [%]': 'util_memory'})
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     df['power'] = df['power'].str.replace(' W', '').astype(float)
     df['sm'] = df['sm'].str.replace(' MHz', '').astype(int)
     df['memory'] = df['memory'].str.replace(' MHz', '').astype(int)
     df['graphics'] = df['graphics'].str.replace(' MHz', '').astype(int)
+    if 'util_gpu' in df:
+        df['util_gpu'] = df['util_gpu'].str.replace(' %', '').astype(int)
+        df['util_memory'] = df['util_memory'].str.replace(' %', '').astype(int)
 
     first_timestamp = df.get("timestamp")[0]
 
@@ -699,8 +764,13 @@ def main():
         bar_plot_energy_total(experiments_cpu, experiments_gpu, experiments_program, args)
         bar_plot_runtime(experiments_cpu, experiments_gpu, args)
 
+        bar_plot_average_power_gpu(experiments_gpu, args)
+
         bar_plot_track_paramaters(experiments_program, args)
         bar_plot_avg_freq_cpu(experiments_cpu, args)
+        bar_plot_avg_power_cpu(experiments_cpu, args)
+    elif(args.experiment == 2):
+        bar_plot_util_gpu(experiments_gpu, args)
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,11 @@
+{
+    "experiment_name": "mu_experiments_A100_no_mark",
+    "time_limit": 15,
+    "runs": 1,
+    "gpu": "A100",
+    "threads": 8,
+    "exec": "traccc/build/bin/traccc_throughput_mt_cuda",
+    "events": 100000,
+    "input_dir": ["tml_full/ttbar_mu20", "tml_full/ttbar_mu40", "tml_full/ttbar_mu60", "tml_full/ttbar_mu80", "tml_full/ttbar_mu100", "tml_full/ttbar_mu140", "tml_full/ttbar_mu200", "tml_full/ttbar_mu300"],
+    "marker": false
+}

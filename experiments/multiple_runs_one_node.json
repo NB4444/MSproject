@@ -8,5 +8,5 @@
     "events": 100000,
     "input_dir": "tml_full/ttbar_mu60",
     "marker": true,
-    "nodes": ["node007", "node006", "node005", "node026"]
+    "nodes": ["node007", "node006", "node010", "node011", "node012", "node013"]
 }

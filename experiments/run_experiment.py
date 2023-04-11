@@ -35,13 +35,13 @@ sleep 5"""
 
             if t == 0:
                 r = f"""
-nvidia-smi --query-gpu=index,timestamp,power.draw,clocks.sm,clocks.mem,clocks.gr --format=csv --id=0 -lms 1 -f {output_dir}gpu{i}.csv &
+nvidia-smi --query-gpu=index,timestamp,power.draw,clocks.sm,clocks.mem,clocks.gr,utilization.gpu,utilization.memory --format=csv --id=0 -lms 1 -f {output_dir}gpu{i}.csv &
 likwid-perfctr -C { create_core_string(exp['threads'] if threads == None else threads) } -g ENERGY {'-m' if (exp['marker'] if marker == None else marker) else ''} -o {output_dir}cpu{i}.csv {exp['exec'] if exec == None else exec} --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory={exp['input_dir'] if input_dir == None else input_dir}/ --loaded_events 10 --processed_events {exp['events'] if events == None else events} --cold_run_events 0 --threads {exp['threads'] if threads == None else threads}
                 """
             if t == 1:
                 last_dir_name = output_dir.split('/')[-2]
                 r = f"""
-nsys profile --output={output_dir}report_{last_dir_name}_{i}.nsys-rep {exp['exec'] if exec == None else exec} --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory={exp['input_dir'] if input_dir == None else input_dir}/ --loaded_events 10 --processed_events {exp['events'] if events == None else events} --cold_run_events 0 --threads {exp['threads'] if threads == None else threads}
+nsys profile --gpu-metrics-device all --output={output_dir}report_{last_dir_name}_{i}.nsys-rep {exp['exec'] if exec == None else exec} --detector_file=tml_detector/trackml-detector.csv --digitization_config_file=tml_detector/default-geometric-config-generic.json --input_directory={exp['input_dir'] if input_dir == None else input_dir}/ --loaded_events 10 --processed_events {exp['events'] if events == None else events} --cold_run_events 0 --threads {exp['threads'] if threads == None else threads}
                 """
 
             if t == 2:
