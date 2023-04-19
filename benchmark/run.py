@@ -49,10 +49,6 @@ def main():
 
     args = parser.parse_args()
 
-    # with open(args.experiment, "r") as f:
-    #     exp = json.loads(f.read())
-
-    # start_experiment(exp, args.type)
     if args.gpu == "A4000":
         total_sm = 46
         cores_per_sm = 128
@@ -72,7 +68,7 @@ def main():
 
     now_str = now.strftime("%Y-%m-%d_%H:%M:%S")
 
-    output = f"util_bench_{now_str}/"
+    output = f"util_bench_{args.gpu}_{now_str}/"
 
     print(output)
 

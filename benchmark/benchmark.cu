@@ -6,10 +6,7 @@
 
 __global__ void kernel(float* A, float* B, int total) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
-
-    for(int i =0; i < NUM_RUNS; i++) {
-        A[index] += B[index];
-    }
+    for(int i =0; i < NUM_RUNS; i++) A[index] += B[index];
 }
 
 int main(int argc, char **argv) {

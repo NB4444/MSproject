@@ -39,7 +39,7 @@ def calculate_energy(data):
     return energy
 
 def sort_keys(l):
-    return sorted(l, key=lambda s: int(''.join(filter(str.isdigit, s))))
+    return sorted(l, key=lambda s: tuple([int(s.split("_")[1]), int(s.split("_")[0])]))
 
 def power_average_runs(data, args):
     power_list = []
@@ -52,10 +52,13 @@ def power_average_runs(data, args):
     threads_per_sm_highest = int(highest[1])
     tot_highest = sm_highest * threads_per_sm_highest
 
-    for key in data.keys():
+    threads = []
+
+    for key in s_keys:
         b = key.split("_")
         sm =  int(b[0])
         threads_per_sm = int(b[1])
+        threads.append(threads_per_sm)
         tot = sm * threads_per_sm
         pow = []
         for df in data[key]:
@@ -65,24 +68,80 @@ def power_average_runs(data, args):
         perc_sm.append((sm/sm_highest) * 100)
         perc_cores.append((tot/tot_highest) * 100)
 
-    plt.scatter(perc_sm, power_list)
-    # plt.legend()
-    plt.title("Power consumption for different utilization workloads")
+    part_size = len(power_list) // 3
+    plt.scatter(perc_sm[:part_size], power_list[:part_size], c='r', label=f"{threads[0]} threads per block")
+    plt.scatter(perc_sm[part_size:part_size*2], power_list[part_size:part_size*2], c='g', label=f"{threads[part_size]} threads per block")
+    plt.scatter(perc_sm[part_size*2:], power_list[part_size*2:], c='b', label=f"{threads[part_size*2]} threads per block")
+    plt.title(f"Average Power consumption for different utilizations for {args.gpu}")
+    plt.legend()
     plt.xlabel("Utilization of the SMs (%)")
     plt.ylabel("Power")
     plt.plot()
     plt.tight_layout()
-    plt.savefig(args.output + "power_sm_util.pdf")
+    plt.savefig(args.output + f"power_sm_util_{args.gpu}.pdf")
     plt.clf()
 
-    plt.scatter(perc_cores, power_list)
-    # plt.legend()
-    plt.title("Power consumption for different utilization workloads")
+    plt.scatter(perc_cores[:part_size], power_list[:part_size], c='r', label=f"{threads[0]} threads per block")
+    plt.scatter(perc_cores[part_size:part_size*2], power_list[part_size:part_size*2], c='g', label=f"{threads[part_size]} threads per block")
+    plt.scatter(perc_cores[part_size*2:], power_list[part_size*2:], c='b', label=f"{threads[part_size*2]} threads per block")
+    plt.legend()
+    plt.title(f"Average Power consumption for different utilizations for {args.gpu}")
     plt.xlabel("Utilization of the cores (%)")
     plt.ylabel("Power")
     plt.plot()
     plt.tight_layout()
-    plt.savefig(args.output + "power_cores_util.pdf")
+    plt.savefig(args.output + f"power_cores_util_{args.gpu}.pdf")
+    plt.clf()
+
+def power_last_runs(data, args):
+    power_list = []
+    perc_sm = []
+    perc_cores = []
+    s_keys = sort_keys(data.keys())
+    highest = s_keys[-1].split("_")
+
+    sm_highest = int(highest[0])
+    threads_per_sm_highest = int(highest[1])
+    tot_highest = sm_highest * threads_per_sm_highest
+
+    threads = []
+
+    for key in s_keys:
+        b = key.split("_")
+        sm =  int(b[0])
+        threads_per_sm = int(b[1])
+        threads.append(threads_per_sm)
+        tot = sm * threads_per_sm
+        pow = []
+        for df in data[key]:
+            pow.append(list(df['power'])[-1])
+        power_list.append(np.mean(pow))
+        perc_sm.append((sm/sm_highest) * 100)
+        perc_cores.append((tot/tot_highest) * 100)
+
+    part_size = len(power_list) // 3
+    plt.scatter(perc_sm[:part_size], power_list[:part_size], c='r', label=f"{threads[0]} threads per block")
+    plt.scatter(perc_sm[part_size:part_size*2], power_list[part_size:part_size*2], c='g', label=f"{threads[part_size]} threads per block")
+    plt.scatter(perc_sm[part_size*2:], power_list[part_size*2:], c='b', label=f"{threads[part_size*2]} threads per block")
+    plt.title(f"Last Power consumption for different utilization workloads for {args.gpu}")
+    plt.legend()
+    plt.xlabel("Utilization of the SMs (%)")
+    plt.ylabel("Power")
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "last_power_sm_util.pdf")
+    plt.clf()
+
+    plt.scatter(perc_cores[:part_size], power_list[:part_size], c='r', label=f"{threads[0]} threads per block")
+    plt.scatter(perc_cores[part_size:part_size*2], power_list[part_size:part_size*2], c='g', label=f"{threads[part_size]} threads per block")
+    plt.scatter(perc_cores[part_size*2:], power_list[part_size*2:], c='b', label=f"{threads[part_size*2]} threads per block")
+    plt.legend()
+    plt.title(f"Last Power consumption for different utilization workloads for {args.gpu}")
+    plt.xlabel("Utilization of the cores (%)")
+    plt.ylabel("Power")
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "last_power_cores_util.pdf")
     plt.clf()
 
 def duration_runs(data, args):
@@ -152,6 +211,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True, help="Name of directory of the data")
     parser.add_argument("--output", default="graphs/", help="Name of directory of the graph")
+    parser.add_argument("--gpu", default="A4000", help="Type of GPU for titles")
 
     parser.add_argument("--experiment", type=int, default=0, help="What experiment to create graph for")
 
@@ -162,6 +222,7 @@ def main():
     args.output = args.output + name_exp + "/"
     if not os.path.exists(args.output):
         os.mkdir(args.output)
+
 
     experiments_gpu = {}
     for (dirpath, dirnames, filenames) in os.walk(args.input):
@@ -176,6 +237,7 @@ def main():
             experiments_gpu[name] = lgpu
 
     power_average_runs(experiments_gpu, args)
+    power_last_runs(experiments_gpu, args)
     duration_runs(experiments_gpu, args)
 
 if __name__ == "__main__":
