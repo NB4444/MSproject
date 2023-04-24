@@ -206,4 +206,5 @@ def cpu_model():
 
 
 gpu_model()
-# cpu_model()
+cpu_model()
+# power_func()

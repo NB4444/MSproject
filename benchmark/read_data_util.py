@@ -93,6 +93,58 @@ def power_average_runs(data, args):
     plt.savefig(args.output + f"power_cores_util_{args.gpu}.pdf")
     plt.clf()
 
+def power_max_runs(data, args):
+    power_list = []
+    perc_sm = []
+    perc_cores = []
+    s_keys = sort_keys(data.keys())
+    highest = s_keys[-1].split("_")
+
+    sm_highest = int(highest[0])
+    threads_per_sm_highest = int(highest[1])
+    tot_highest = sm_highest * threads_per_sm_highest
+
+    threads = []
+
+    for key in s_keys:
+        b = key.split("_")
+        sm =  int(b[0])
+        threads_per_sm = int(b[1])
+        threads.append(threads_per_sm)
+        tot = sm * threads_per_sm
+        pow = []
+        for df in data[key]:
+            i = first_higher_then(df['util_gpu'], 5)
+            pow.append(np.max(df['power'][i:]))
+        power_list.append(np.mean(pow))
+        perc_sm.append((sm/sm_highest) * 100)
+        perc_cores.append((tot/tot_highest) * 100)
+
+    part_size = len(power_list) // 3
+    plt.scatter(perc_sm[:part_size], power_list[:part_size], c='r', label=f"{threads[0]} threads per block")
+    plt.scatter(perc_sm[part_size:part_size*2], power_list[part_size:part_size*2], c='g', label=f"{threads[part_size]} threads per block")
+    plt.scatter(perc_sm[part_size*2:], power_list[part_size*2:], c='b', label=f"{threads[part_size*2]} threads per block")
+    plt.title(f"Max Power consumption for different utilizations for {args.gpu}")
+    plt.legend()
+    plt.xlabel("Utilization of the SMs (%)")
+    plt.ylabel("Power")
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + f"max_power_sm_util_{args.gpu}.pdf")
+    plt.clf()
+
+    plt.scatter(perc_cores[:part_size], power_list[:part_size], c='r', label=f"{threads[0]} threads per block")
+    plt.scatter(perc_cores[part_size:part_size*2], power_list[part_size:part_size*2], c='g', label=f"{threads[part_size]} threads per block")
+    plt.scatter(perc_cores[part_size*2:], power_list[part_size*2:], c='b', label=f"{threads[part_size*2]} threads per block")
+    plt.legend()
+    plt.title(f"Max Power consumption for different utilizations for {args.gpu}")
+    plt.xlabel("Utilization of the cores (%)")
+    plt.ylabel("Power")
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + f"max_ power_cores_util_{args.gpu}.pdf")
+    plt.clf()
+
 def power_last_runs(data, args):
     power_list = []
     perc_sm = []
@@ -237,8 +289,9 @@ def main():
             experiments_gpu[name] = lgpu
 
     power_average_runs(experiments_gpu, args)
-    power_last_runs(experiments_gpu, args)
+    # power_last_runs(experiments_gpu, args)
     duration_runs(experiments_gpu, args)
+    power_max_runs(experiments_gpu, args)
 
 if __name__ == "__main__":
     main()

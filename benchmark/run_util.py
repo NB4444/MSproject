@@ -19,7 +19,7 @@ def run(runs, node=None, experiment=None, time_limit=15, numBlocks=0, numThreads
     for i in range(runs):
         with open(filename, "w") as f:
             setup = f"""#!/bin/bash
-#SBATCH --job-name={exp['experiment_name'] if experiment == None else experiment}_{i}
+#SBATCH --job-name={experiment}_{i}
 #SBATCH --account=nbreed
 #SBATCH --nodes=1
 #SBATCH --time=00:{time_limit}:00
@@ -50,7 +50,7 @@ def main():
     args = parser.parse_args()
 
     if args.gpu == "A4000":
-        total_sm = 46
+        total_sm = 48
         cores_per_sm = 128
     if args.gpu == "A6000":
         total_sm = 84
