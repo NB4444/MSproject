@@ -62,18 +62,33 @@ def read_data_gpu(input):
 def power_box(data, args):
     power_list = []
     labels = []
+    idle_power_list = []
     for key in data.keys():
         labels.append(key)
         pow = []
         for df in data[key]:
             i = first_higher_then(df['util_gpu'], 5)
             pow.extend(list(df['power'][i:]))
+            idle_power_list.append(df['power'][0])
         power_list.append(pow)
 
+    if args.gpu == "A4000":
+        max_power = 140
+    if args.gpu == "A6000":
+        max_power = 300
+    if args.gpu == "A2":
+        max_power = 60
+    if args.gpu == "A100":
+        max_power = 250
+
+    plt.axhline(y=max_power, color='black', linestyle='--', label="Maximum Power")
+    plt.axhline(y=np.mean(idle_power_list), color='gray', linestyle='--', label="Averaged Idle Power")
     plt.boxplot(power_list, showfliers=False, labels=labels)
     plt.title(f"Power consumption for different kernels for {args.gpu}")
     plt.xlabel("Different Kernels")
     plt.ylabel("Power (Watt)")
+    plt.ylim(0)
+    plt.legend()
     plt.plot()
     plt.tight_layout()
     plt.savefig(args.output + f"power_boxplot_{args.gpu}.pdf")
