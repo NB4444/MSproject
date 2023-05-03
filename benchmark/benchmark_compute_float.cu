@@ -5,16 +5,9 @@
 
 __global__ void kernel(float* A, long const num_runs) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
-    __shared__ float A_loc[128];
-    __shared__ float B[128];
-    long part = num_runs/128;
-    for(long i = 0; i < part; i++) {
-        for (int j = 0; j < 128; j++) {
-            A_loc[j] = B[j];
-        }
-
-    }
-    A[index] = A_loc[index];
+    float a = 0;
+    for(long i =0; i < num_runs; i++) a += 1.234f;
+    A[index] = a;
 }
 
 int main(int argc, char **argv) {
@@ -27,4 +20,6 @@ int main(int argc, char **argv) {
     cudaMalloc((void **) &A, total * sizeof(float));
 
     kernel<<<num_sms, num_threads>>>(A, num_runs);
+
+    cudaFree(A);
 }

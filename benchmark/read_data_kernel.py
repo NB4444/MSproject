@@ -64,7 +64,15 @@ def power_box(data, args):
     labels = []
     idle_power_list = []
     for key in data.keys():
-        labels.append(key)
+        if len(key) > 20:
+            words = key.split(' ')
+            l = len(words)
+            middle = l//2
+            first = " ".join(words[:middle])
+            last = " ".join(words[middle:])
+            labels.append(f"{first}\n{last}")
+        else:
+            labels.append(key)
         pow = []
         for df in data[key]:
             i = first_higher_then(df['util_gpu'], 5)
@@ -81,8 +89,15 @@ def power_box(data, args):
     if args.gpu == "A100":
         max_power = 250
 
+    idle = np.mean(idle_power_list)
+
+    print(f"Max power: {max_power}, Idle power {idle}")
+
+    for p in power_list:
+        print(f"Mean power: {np.mean(p)}")
+
     plt.axhline(y=max_power, color='black', linestyle='--', label="Maximum Power")
-    plt.axhline(y=np.mean(idle_power_list), color='gray', linestyle='--', label="Averaged Idle Power")
+    plt.axhline(y=idle, color='gray', linestyle='--', label="Averaged Idle Power")
     plt.boxplot(power_list, showfliers=False, labels=labels)
     plt.title(f"Power consumption for different kernels for {args.gpu}")
     plt.xlabel("Different Kernels")

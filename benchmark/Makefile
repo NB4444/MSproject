@@ -22,4 +22,3 @@ all: $(EXECUTABLES)
 # Clean rule
 clean:
 	rm -f $(EXECUTABLES)
-
