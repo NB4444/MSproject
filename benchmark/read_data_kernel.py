@@ -64,7 +64,7 @@ def power_box(data, args):
     labels = []
     idle_power_list = []
     for key in data.keys():
-        if len(key) > 20:
+        if len(key) > 10:
             words = key.split(' ')
             l = len(words)
             middle = l//2
@@ -109,6 +109,112 @@ def power_box(data, args):
     plt.savefig(args.output + f"power_boxplot_{args.gpu}.pdf")
     plt.clf()
 
+def time_bar(data, args):
+    power_list = []
+    labels = []
+    for key in data.keys():
+        if len(key) > 10:
+            words = key.split(' ')
+            l = len(words)
+            middle = l//2
+            first = " ".join(words[:middle])
+            last = " ".join(words[middle:])
+            labels.append(f"{first}\n{last}")
+        else:
+            labels.append(key)
+        pow = []
+        for df in data[key]:
+            pow.append((list(df['duration'])[-1])/1000)
+        power_list.append(np.mean(pow))
+
+    plt.bar(labels, power_list)
+    plt.title(f"Runtime for different kernels for {args.gpu}")
+    plt.xlabel("Different Kernels")
+    plt.ylabel("Time (s)")
+    plt.ylim(0)
+    # plt.legend()
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + f"time_bar_{args.gpu}.pdf")
+    plt.clf()
+
+def time_line(data, args):
+    power_list = []
+    labels = []
+    for key in data.keys():
+        labels.append(int(key))
+        pow = []
+        for df in data[key]:
+            pow.append((list(df['duration'])[-1])/1000)
+        power_list.append(np.mean(pow))
+
+
+    plt.scatter(labels, power_list)
+    # plt.title(f"Power consumption for different kernels for {args.gpu}")
+    # plt.xlabel("Number of FP32 instruction per 1 FP64 instruction")
+    plt.xlabel("Number of Streams")
+    plt.ylabel("Time (s)")
+    plt.ylim(0)
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + f"time_lineplot_{args.gpu}.pdf")
+    plt.clf()
+
+    plt.scatter(labels, np.array(power_list)/np.array(labels))
+    # plt.title(f"Power consumption for different kernels for {args.gpu}")
+    # plt.xlabel("Number of FP32 instruction per 1 FP64 instruction")
+    plt.xlabel("Number of Streams")
+    plt.ylabel("Time per stream(s)")
+    plt.ylim(0)
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + f"time_per_stream_lineplot_{args.gpu}.pdf")
+    plt.clf()
+
+def power_line(data, args):
+    power_list = []
+    labels = []
+    idle_power_list = []
+    for key in data.keys():
+        labels.append(int(key))
+        pow = []
+        for df in data[key]:
+            i = first_higher_then(df['util_gpu'], 5)
+            pow.append(np.mean(df['power'][i:]))
+            idle_power_list.append(df['power'][0])
+        power_list.append(pow)
+
+    if args.gpu == "A4000":
+        max_power = 140
+    if args.gpu == "A6000":
+        max_power = 300
+    if args.gpu == "A2":
+        max_power = 60
+    if args.gpu == "A100":
+        max_power = 250
+
+    idle = np.mean(idle_power_list)
+
+    print(f"Max power: {max_power}, Idle power {idle}")
+    print(f"Highest power {np.max(power_list)}")
+    print(f"Average power {np.mean(power_list)}")
+    print([x for _, x in sorted(zip(labels, [p[0] for p in power_list]), key=lambda pair: pair[0])])
+
+
+    plt.axhline(y=max_power, color='black', linestyle='--', label="Maximum Power")
+    plt.axhline(y=idle, color='gray', linestyle='--', label="Averaged Idle Power")
+    plt.scatter(labels, power_list)
+    # plt.title(f"Power consumption for different kernels for {args.gpu}")
+    plt.xlabel("Number of FP32 instruction per 1 FP64 instruction")
+    # plt.xlabel("Number of Streams")
+    plt.ylabel("Power (Watt)")
+    plt.ylim(0)
+    plt.legend()
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + f"power_lineplot_{args.gpu}.pdf")
+    plt.clf()
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True, help="Name of directory of the data")
@@ -125,7 +231,7 @@ def main():
     if not os.path.exists(args.output):
         os.mkdir(args.output)
 
-
+    # plt.figure(figsize=(5, 4))
     experiments_gpu = {}
     for (dirpath, dirnames, filenames) in os.walk(args.input):
         if len(filenames) > 1:
@@ -138,7 +244,12 @@ def main():
                 lgpu.append(read_data_gpu(f"{dirpath}/{name_data}" ))
             experiments_gpu[name] = lgpu
 
-    power_box(experiments_gpu, args)
+    if len(experiments_gpu) < 10:
+        power_box(experiments_gpu, args)
+        time_bar(experiments_gpu, args)
+    else:
+        power_line(experiments_gpu, args)
+        time_line(experiments_gpu, args)
 
 
 

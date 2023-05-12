@@ -43,6 +43,11 @@ nvidia-smi --query-gpu=index,timestamp,power.draw,clocks.sm,clocks.mem,clocks.gr
                 exp = f"""
 ncu --set full -o {output_dir}profile_{last_dir_name}_{i} ./{program} {numBlocks} {numThreads} {num_runs} {n if n is not None else ""} {m if m is not None else ""}
                 """
+            elif type == 2:
+                last_dir_name = output_dir.split('/')[-2]
+                exp = f"""
+nsys profile --output={output_dir}report_{last_dir_name}_{i}.nsys-rep ./{program} {numBlocks} {numThreads} {num_runs} {n if n is not None else ""} {m if m is not None else ""}
+                """
             else:
                 exp = ""
 
@@ -201,6 +206,38 @@ def experiment_comp_float_double(args, output, total_sm, cores_per_sm, float_fra
     os.mkdir(output_dir)
     run(1, "benchmark_compute_double", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=100000000, type=1)
 
+def experiment_comp_float_double_2(args, output, total_sm, cores_per_sm):
+    name = f"1 FP32 and 1 FP64 kernel"
+    output_dir = f"{output}{name}/"
+    os.mkdir(output_dir)
+    output_dir = output_dir.replace(' ', '\ ')
+    run(3, "benchmark_compute_floatN_doubleM", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=100000000, n=1, m=1)
+
+    name = f"1 FP32 and 2 FP64 kernel"
+    output_dir = f"{output}{name}/"
+    os.mkdir(output_dir)
+    output_dir = output_dir.replace(' ', '\ ')
+    run(3, "benchmark_compute_floatN_doubleM", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=100000000, n=1, m=2)
+
+    name = f"2 FP32 and 2 FP64 kernel"
+    output_dir = f"{output}{name}/"
+    os.mkdir(output_dir)
+    output_dir = output_dir.replace(' ', '\ ')
+    run(3, "benchmark_compute_floatN_doubleM", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=100000000, n=2, m=2)
+
+    name = f"64 FP32 and 2 FP64 kernel"
+    output_dir = f"{output}{name}/"
+    os.mkdir(output_dir)
+    output_dir = output_dir.replace(' ', '\ ')
+    run(3, "benchmark_compute_floatN_doubleM", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=100000000, n=64, m=2)
+
+    name = f"1 FP32 and 3 FP64 kernel"
+    output_dir = f"{output}{name}/"
+    os.mkdir(output_dir)
+    output_dir = output_dir.replace(' ', '\ ')
+    run(3, "benchmark_compute_floatN_doubleM", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=100000000, n=1, m=3)
+
+
 def experiment_mem(args, output, total_sm, cores_per_sm):
     name = f"Bad coalescing memory"
     output_dir = f"{output}{name}/"
@@ -285,6 +322,53 @@ def experiment_mem_compute_balance(args, output, total_sm, cores_per_sm):
     output_dir = output_dir.replace(' ', '\ ')
     run(1, "benchmark_memoryN_computeM", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=5000000, n=1, m=2, type=1)
 
+def experiment_comp_scaling_float_double(args, output, total_sm, cores_per_sm, float_frac):
+    for i in range(float_frac*2+1):
+        name = f"{i}"
+        output_dir = f"{output}{name}/"
+        os.mkdir(output_dir)
+        output_dir = output_dir.replace(' ', '\ ')
+        run(1, "benchmark_compute_floatN_double", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=500000000, n=i)
+
+
+def experiment_comp_float_streams(args, output, total_sm, cores_per_sm):
+    for i in range(1, 20):
+        name = f"{i}"
+        output_dir = f"{output}{name}/"
+        os.mkdir(output_dir)
+        output_dir = output_dir.replace(' ', '\ ')
+        run(1, "benchmark_compute_float_streams", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=10000000000, n=i)
+        run(1, "benchmark_compute_float_streams", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=10000000000, n=i, type=2)
+
+
+def experiment_comp_memory_streams(args, output, total_sm, cores_per_sm):
+    for i in range(1, 20):
+        name = f"{i}"
+        output_dir = f"{output}{name}/"
+        os.mkdir(output_dir)
+        output_dir = output_dir.replace(' ', '\ ')
+        run(1, "benchmark_compute_memory_streams", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=1000000000, n=i)
+        run(1, "benchmark_compute_memory_streams", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=1000000000, n=i, type=2)
+
+def experiment_comp_balance_streams(args, output, total_sm, cores_per_sm):
+    name = f"2 Streams {total_sm} blocks {cores_per_sm} blocksize"
+    output_dir = f"{output}{name}/"
+    os.mkdir(output_dir)
+    output_dir = output_dir.replace(' ', '\ ')
+    run(5, "benchmark_compute_memory_streams", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=1000000000, n=2)
+
+    name = f"1 Stream {total_sm*2} blocks {cores_per_sm} blocksize"
+    output_dir = f"{output}{name}/"
+    os.mkdir(output_dir)
+    output_dir = output_dir.replace(' ', '\ ')
+    run(5, "benchmark_compute_memory_streams", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm*2, numThreads=cores_per_sm, num_runs=1000000000, n=1)
+
+    name = f"1 Stream {total_sm} blocks {cores_per_sm*2} blocksize"
+    output_dir = f"{output}{name}/"
+    os.mkdir(output_dir)
+    output_dir = output_dir.replace(' ', '\ ')
+    run(5, "benchmark_compute_memory_streams", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm*2, num_runs=1000000000, n=1)
+
 
 
 
@@ -341,11 +425,28 @@ def main():
     elif args.experiment == 5:
         output = f"comp_bench_float_double_{args.gpu}_{now_str}/"
         os.mkdir(output)
-        experiment_comp_float_double(args, output, total_sm, cores_per_sm, float_frac)
+        # experiment_comp_float_double(args, output, total_sm, cores_per_sm, float_frac)
+        experiment_comp_float_double_2(args, output, total_sm, cores_per_sm)
     elif args.experiment == 6:
         output = f"comp_mem_balance_{args.gpu}_{now_str}/"
         os.mkdir(output)
         experiment_mem_compute_balance(args, output, total_sm, cores_per_sm)
+    elif args.experiment == 7:
+        output = f"comp_bench_scaling_float_double_{args.gpu}_{now_str}/"
+        os.mkdir(output)
+        experiment_comp_scaling_float_double(args, output, total_sm, cores_per_sm, float_frac)
+    elif args.experiment == 8:
+        output = f"comp_float_streams_{args.gpu}_{now_str}/"
+        os.mkdir(output)
+        experiment_comp_float_streams(args, output, total_sm, cores_per_sm)
+    elif args.experiment == 9:
+        output = f"comp_memory_streams_{args.gpu}_{now_str}/"
+        os.mkdir(output)
+        experiment_comp_memory_streams(args, output, total_sm, cores_per_sm)
+    elif args.experiment == 10:
+        output = f"comp_balance_streams_{args.gpu}_{now_str}/"
+        os.mkdir(output)
+        experiment_comp_balance_streams(args, output, total_sm, cores_per_sm)
 
 
 
