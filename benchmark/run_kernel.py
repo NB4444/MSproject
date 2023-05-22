@@ -261,6 +261,34 @@ def experiment_mem(args, output, total_sm, cores_per_sm):
     os.mkdir(output_dir)
     run(1, "benchmark_memory", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=1000000000, type=1)
 
+def experiment_mem_stride(args, output, total_sm, cores_per_sm):
+    for i in [1, 16, 32, 64, 128, 256]:
+        name = f"Stride {i}"
+        output_dir = f"{output}{name}/"
+        os.mkdir(output_dir)
+        output_dir = output_dir.replace(' ', '\ ')
+        run(5, "benchmark_memory_offset_dyn", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, n=i, num_runs=100000000)
+        run(1, "benchmark_memory_offset_dyn", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, n=i, num_runs=1000000, type=1)
+
+def experiment_mem_stride2(args, output, total_sm, cores_per_sm):
+    for i in [1, 32, 128, 256, 512, 2048]:
+        name = f"Stride {i}"
+        output_dir = f"{output}{name}/"
+        os.mkdir(output_dir)
+        output_dir = output_dir.replace(' ', '\ ')
+        run(5, "benchmark_memory_offset_dyn2", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, n=i, num_runs=100000000)
+        run(1, "benchmark_memory_offset_dyn2", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, n=i, num_runs=1000000, type=1)
+
+def experiment_mem_stride3(args, output, total_sm, cores_per_sm):
+    for i in [1, 32, 128, 256, 512, 2048]:
+        name = f"Stride {i}"
+        output_dir = f"{output}{name}/"
+        os.mkdir(output_dir)
+        output_dir = output_dir.replace(' ', '\ ')
+        run(5, "benchmark_memory_offset_dyn3", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, n=i, num_runs=100000000)
+        run(1, "benchmark_memory_offset_dyn3", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, n=i, num_runs=1000000, type=1)
+
+
 def experiment_mem_compute_balance(args, output, total_sm, cores_per_sm):
     name = f"1 FP32"
     output_dir = f"{output}{name}/"
@@ -355,21 +383,21 @@ def experiment_comp_balance_streams(args, output, total_sm, cores_per_sm):
     output_dir = f"{output}{name}/"
     os.mkdir(output_dir)
     output_dir = output_dir.replace(' ', '\ ')
-    run(5, "benchmark_compute_memory_streams", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=1000000000, n=2)
+    run(5, "benchmark_compute_float_streams", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=1000000000, n=2)
 
     name = f"1 Stream {total_sm*2} blocks {cores_per_sm} blocksize"
     output_dir = f"{output}{name}/"
     os.mkdir(output_dir)
     output_dir = output_dir.replace(' ', '\ ')
-    run(5, "benchmark_compute_memory_streams", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm*2, numThreads=cores_per_sm, num_runs=1000000000, n=1)
+    run(5, "benchmark_compute_float", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm*2, numThreads=cores_per_sm, num_runs=1000000000)
 
     name = f"1 Stream {total_sm} blocks {cores_per_sm*2} blocksize"
     output_dir = f"{output}{name}/"
     os.mkdir(output_dir)
     output_dir = output_dir.replace(' ', '\ ')
-    run(5, "benchmark_compute_memory_streams", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm*2, num_runs=1000000000, n=1)
+    run(5, "benchmark_compute_float", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm*2, num_runs=1000000000)
 
-
+8
 
 
 def main():
@@ -447,6 +475,18 @@ def main():
         output = f"comp_balance_streams_{args.gpu}_{now_str}/"
         os.mkdir(output)
         experiment_comp_balance_streams(args, output, total_sm, cores_per_sm)
+    elif args.experiment == 11:
+        output = f"comp_memory_offset_{args.gpu}_{now_str}/"
+        os.mkdir(output)
+        experiment_mem_stride(args, output, total_sm, cores_per_sm)
+    elif args.experiment == 12:
+        output = f"comp_memory_offsets2_{args.gpu}_{now_str}/"
+        os.mkdir(output)
+        experiment_mem_stride2(args, output, total_sm, cores_per_sm)
+    elif args.experiment == 13:
+        output = f"comp_memory_offsets3_{args.gpu}_{now_str}/"
+        os.mkdir(output)
+        experiment_mem_stride3(args, output, total_sm, cores_per_sm)
 
 
 

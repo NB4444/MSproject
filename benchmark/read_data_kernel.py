@@ -59,11 +59,22 @@ def read_data_gpu(input):
 
     return df
 
+def sort_keys(keys):
+    order_list = []
+    for key in keys:
+        num = [int(s) for s in key.split() if s.isdigit()]
+        if len(num) == 0:
+            order_list.append(0)
+        else:
+            order_list.append(num[0])
+    return [x for _, x in sorted(zip(order_list, keys))]
+
 def power_box(data, args):
     power_list = []
     labels = []
     idle_power_list = []
-    for key in data.keys():
+    sorted_keys = sort_keys(data.keys())
+    for key in sorted_keys:
         if len(key) > 10:
             words = key.split(' ')
             l = len(words)
@@ -112,7 +123,9 @@ def power_box(data, args):
 def time_bar(data, args):
     power_list = []
     labels = []
-    for key in data.keys():
+    sorted_keys = sort_keys(data.keys())
+    std_list = []
+    for key in sorted_keys:
         if len(key) > 10:
             words = key.split(' ')
             l = len(words)
@@ -126,8 +139,9 @@ def time_bar(data, args):
         for df in data[key]:
             pow.append((list(df['duration'])[-1])/1000)
         power_list.append(np.mean(pow))
+        std_list.append(np.std(pow))
 
-    plt.bar(labels, power_list)
+    plt.bar(labels, power_list, yerr=std_list)
     plt.title(f"Runtime for different kernels for {args.gpu}")
     plt.xlabel("Different Kernels")
     plt.ylabel("Time (s)")
@@ -205,8 +219,8 @@ def power_line(data, args):
     plt.axhline(y=idle, color='gray', linestyle='--', label="Averaged Idle Power")
     plt.scatter(labels, power_list)
     # plt.title(f"Power consumption for different kernels for {args.gpu}")
-    plt.xlabel("Number of FP32 instruction per 1 FP64 instruction")
-    # plt.xlabel("Number of Streams")
+    # plt.xlabel("Number of FP32 instruction per 1 FP64 instruction")
+    plt.xlabel("Number of Streams")
     plt.ylabel("Power (Watt)")
     plt.ylim(0)
     plt.legend()
@@ -220,6 +234,7 @@ def main():
     parser.add_argument("--input", required=True, help="Name of directory of the data")
     parser.add_argument("--output", default="graphs/", help="Name of directory of the graph")
     parser.add_argument("--gpu", default="A4000", help="Type of GPU for titles")
+    parser.add_argument("--line", default=0, help="Forced line use")
 
     parser.add_argument("--experiment", type=int, default=0, help="What experiment to create graph for")
 
@@ -244,7 +259,7 @@ def main():
                 lgpu.append(read_data_gpu(f"{dirpath}/{name_data}" ))
             experiments_gpu[name] = lgpu
 
-    if len(experiments_gpu) < 10:
+    if len(experiments_gpu) < 10 and args.line == 0:
         power_box(experiments_gpu, args)
         time_bar(experiments_gpu, args)
     else:
