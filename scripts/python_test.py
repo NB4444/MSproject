@@ -203,8 +203,25 @@ def cpu_model():
     plt.show()
     plt.cla()
 
+def time_model():
+    # A4000 time per event ~1900 Mhz 6144
+    A4000_time = np.array([0.00067313, 0.00081004, 0.00080258, 0.00084744, 0.00094708, 0.00125682, 0.00196237, 0.00348345])
+# A6000 time per event ~1900 Mhz 10752
+    A6000_time = np.array([0.00068106, 0.00081655, 0.00079109, 0.00085549, 0.0009106,  0.00107845, 0.00159261, 0.00267297])
+# A2 time per event 1750 Mhz 1280
+    A2_time = np.array([0.00070472, 0.00084332, 0.00101828, 0.00141888, 0.00185642, 0.002739, 0.00471214, 0.00976262])
+# A100 time per event 1400 Mhz 6912
+    A100_time = np.array([0.00076963, 0.00093544, 0.00107437, 0.00113593, 0.00116899, 0.00141207, 0.00193212, 0.00300646])
+
+    # print(A4000_time / A100_time)
+    # print((A4000_time) / (A6000_time))
+    print(A2_time / A4000_time)
+    print(A100_time / A4000_time)
 
 
-gpu_model()
-cpu_model()
+
+# gpu_model()
+# cpu_model()
 # power_func()
+
+time_model()

@@ -1,0 +1,10 @@
+{
+    "experiment_name": "mu_ncu_experiment_A2",
+    "time_limit": 15,
+    "runs": 1,
+    "gpu": "A2",
+    "threads": 8,
+    "exec": "traccc/build/bin/traccc_throughput_mt_cuda",
+    "events": 1000,
+    "input_dir": ["tml_full/ttbar_mu20", "tml_full/ttbar_mu60", "tml_full/ttbar_mu100", "tml_full/ttbar_mu140", "tml_full/ttbar_mu300"]
+}

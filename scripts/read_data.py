@@ -100,16 +100,18 @@ def read_data_program(input):
             data_dict["events"] = int(words[-1])
         if words[0] == "Reconstructed":
             data_dict["track_parameters"] = int(words[-1])
+        if words[0] == "Using":
+            data_dict['gpu'] = words[words.index("[id:")-1]
     return data_dict
 
 def to_ms(diff):
     return int(diff.total_seconds() *1000)
 
-def calculate_energy(data):
+def calculate_energy(data, skip=0):
     time = data.get("duration")
     p = data.get("power")
     energy = 0
-    for i in range(len(p)-1):
+    for i in range(skip, len(p)-1):
         dur = time[i+1] - time[i]
         energy += (dur/1000) * p[i]
     return energy
@@ -161,6 +163,103 @@ def mem_freq_multiple_runs(data, args):
 
 def sort_keys(l):
     return sorted(l, key=lambda s: int(''.join(filter(str.isdigit, s))))
+
+
+def bar_plot_energy_time_for_events(gpu, cpu, program, args):
+    sorted_keys = sort_keys(gpu.keys())
+    inner_keys = cpu[sorted_keys[0]][0].keys()
+    exp = []
+    energy_gpu_mean = []
+    energy_gpu_std = []
+    time_gpu_mean = []
+    time_gpu_std = []
+    events = []
+    mean_track = []
+    time_mean_cpu = []
+    energy_mean_cpu = []
+
+    for key in sorted_keys:
+        exp.append(key)
+        energy_gpu = []
+        time_list = []
+        energy_cpu = 0
+        runtime_cpu = 0
+        mean_track.append(np.mean([run["track_parameters"] for run in program[key]]))
+        events.append(program[key][0]["events"])
+        for inner_key in inner_keys:
+            energy_cpu += np.mean([dic[inner_key].energy_all for dic in cpu[key] if dic[inner_key].energy_all != 281475000000000.0])
+            runtime_cpu += np.mean([dic[inner_key].runtimes for dic in cpu[key]])
+        for df in gpu[key]:
+            if not "util_gpu" in df:
+                change_i = get_iterations_change(df["graphics"])
+                if (change_i == 0):
+                    change_i = get_iterations_change_percentage(df["power"], 0.1)
+            else:
+                change_i = first_higher_then(df["util_gpu"], 5)
+            energy_gpu.append(calculate_energy(df, change_i))
+            time_list.append((list(df['duration'])[-1] - list(df['duration'])[change_i]) / 1000)
+
+        energy_gpu_mean.append(np.mean(energy_gpu))
+        energy_gpu_std.append(np.std(energy_gpu))
+        time_gpu_mean.append(np.mean(time_list))
+        time_gpu_std.append(np.std(time_list))
+        time_mean_cpu.append(runtime_cpu)
+        energy_mean_cpu.append(energy_cpu)
+
+    plt.bar(exp, np.array(energy_gpu_mean), yerr=energy_gpu_std, label="GPU")
+    plt.xticks(rotation=30)
+    plt.ylabel("Energy (J)")
+    plt.xlabel("Input")
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "energy_gpu_events.pdf")
+    plt.clf()
+
+    plt.bar(exp, np.array(energy_gpu_mean) / np.array(events), label="GPU")
+    plt.xticks(rotation=30)
+    plt.ylabel("Energy per event (J/event)")
+    plt.xlabel("Input")
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "energy_gpu_events_per_event.pdf")
+    plt.clf()
+
+    plt.bar(exp, np.array(energy_gpu_mean) / np.array(mean_track), label="GPU")
+    plt.xticks(rotation=30)
+    plt.ylabel("Energy per track (J/track)")
+    plt.xlabel("Input")
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "energy_gpu_events_per_track.pdf")
+    plt.clf()
+
+    plt.bar(exp, np.array(time_gpu_mean), yerr=time_gpu_std, label="GPU")
+    plt.xticks(rotation=30)
+    plt.ylabel("Runtime (s)")
+    plt.xlabel("Input")
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "runtime_gpu_events.pdf")
+    plt.clf()
+
+    plt.bar(exp, np.array(time_gpu_mean) / np.array(events), label="GPU")
+    plt.xticks(rotation=30)
+    plt.ylabel("Runtime per event (s/event)")
+    plt.xlabel("Input")
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "runtime_gpu_events_per_event.pdf")
+    plt.clf()
+
+    plt.bar(exp, np.array(time_gpu_mean) / np.array(mean_track), label="GPU")
+    plt.xticks(rotation=30)
+    plt.ylabel("Runtime per track (s/track)")
+    plt.xlabel("Input")
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "runtime_gpu_events_per_track.pdf")
+    plt.clf()
+
 
 def bar_plot_energy_cpu(data, args):
     all = []
@@ -489,6 +588,7 @@ def bar_plot_runtime(cpu, gpu, args):
     for key in sorted_keys:
         exp.append(key)
         runtime_gpu = []
+        gpu_std = []
         runtime_cpu = 0
         duration_idle_temp = []
         for inner_key in inner_keys:
@@ -505,6 +605,7 @@ def bar_plot_runtime(cpu, gpu, args):
 
         duration_idle.append(np.mean(duration_idle_temp)/1000)
         gpu_mean.append(np.mean(runtime_gpu))
+        gpu_std.append(np.std(runtime_gpu))
         cpu_mean.append(runtime_cpu)
 
     print(f"GPU idle time: {duration_idle}")
@@ -537,27 +638,53 @@ def bar_plot_runtime(cpu, gpu, args):
     plt.savefig(args.output + "runtime.pdf")
     plt.clf()
 
+    plt.bar(ind, height=np.array(gpu_mean), yerr=gpu_std)
+    plt.xticks(ind, exp, rotation=30)
+    plt.ylabel("Runtime (s)")
+    plt.xlabel("Input")
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "runtime_gpu.pdf")
+    plt.clf()
 
 
-def bar_plot_average_power_gpu(data, args):
+
+def box_plot_average_power_gpu(data, program, args):
     sorted_keys = sort_keys(data.keys())
     exp = []
-    power_mean = []
-    power_std = []
+    power_all = []
+    gpu_type = ""
+    idle_power_list = []
 
     for key in sorted_keys:
         exp.append(key)
         power = []
         for df in data[key]:
-            power.append(np.mean(list(df['power'])))
-        power_mean.append(np.mean(power))
-        power_std.append(np.std(power))
+            power.extend(list(df['power']))
+            idle_power_list.append(df['power'][0])
+        power_all.append(power)
+        gpu_type = program[key][0]['gpu']
 
+    if gpu_type == "A4000":
+        max_power = 140
+    elif gpu_type == "A6000":
+        max_power = 300
+    elif gpu_type == "A2":
+        max_power = 60
+    elif gpu_type == "A100-PCIE-40GB":
+        max_power = 250
+
+    idle = np.mean(idle_power_list)
+
+    plt.axhline(y=max_power, color='black', linestyle='--', label="Maximum Power")
+    plt.axhline(y=idle, color='gray', linestyle='--', label="Averaged Idle Power")
+    plt.legend()
     plt.xticks(rotation=30)
-    plt.bar(exp, power_mean, yerr=power_std)
+    plt.boxplot(power_all, showfliers=False, labels=exp)
     plt.tight_layout()
     plt.ylabel("Average Power (W)")
     plt.xlabel("Input")
+    plt.ylim(0)
     plt.plot()
     plt.tight_layout()
     plt.savefig(args.output + "average_power_gpu.pdf")
@@ -568,10 +695,14 @@ def bar_plot_average_power_gpu(data, args):
     power_mean = []
     power_std = []
     power_idle_mean = []
+    power_all = []
+
+
     for key in sorted_keys:
         exp.append(key)
         power = []
         power_idle = []
+        power2 = []
         for df in data[key]:
             if not "util_gpu" in df:
                 change_i = get_iterations_change(df["graphics"])
@@ -579,23 +710,77 @@ def bar_plot_average_power_gpu(data, args):
                     change_i = get_iterations_change_percentage(df["power"], 0.1)
             else:
                 change_i = first_higher_then(df["util_gpu"], 5)
+            power2.extend(list(df['power'])[change_i:])
             power.append(np.mean(list(df['power'])[change_i:]))
             power_idle.append(np.mean(list(df['power'])[:change_i]))
 
         power_idle_mean.append(np.mean(power_idle))
         power_mean.append(np.mean(power))
+        power_all.append(power2)
         power_std.append(np.std(power))
 
     plt.xticks(rotation=30)
     print("Mean power gpu: ", power_mean)
     print("Average idle power gpu:", power_idle_mean)
-    plt.bar(exp, power_mean, yerr=power_std)
+    plt.axhline(y=max_power, color='black', linestyle='--', label="Maximum Power")
+    plt.axhline(y=idle, color='gray', linestyle='--', label="Averaged Idle Power")
+    plt.legend()
+    # plt.bar(exp, power_mean, yerr=power_std)
+    plt.boxplot(power_all, showfliers=False, labels=exp)
     plt.tight_layout()
     plt.ylabel("Average Power (W)")
     plt.xlabel("Input")
+    plt.ylim(0)
     plt.plot()
     plt.tight_layout()
     plt.savefig(args.output + "average_power_during_events_gpu.pdf")
+    plt.clf()
+
+def box_plot_average_freq_gpu(data, args):
+    sorted_keys = sort_keys(data.keys())
+    exp = []
+    freq_all_events = []
+    freq_all = []
+
+    for key in sorted_keys:
+        exp.append(key)
+        freq = []
+        freq_events = []
+        for df in data[key]:
+            freq.extend(list(df['graphics']))
+            if not "util_gpu" in df:
+                change_i = get_iterations_change(df["graphics"])
+                if (change_i == 0):
+                    change_i = get_iterations_change_percentage(df["power"], 0.1)
+            else:
+                change_i = first_higher_then(df["util_gpu"], 5)
+            freq_events.extend(list(df['graphics'])[change_i:])
+
+        freq_all.append(freq)
+        freq_all_events.append(freq_events)
+
+
+    plt.xticks(rotation=30)
+    plt.boxplot(freq_all, showfliers=False, labels=exp)
+    plt.tight_layout()
+    plt.ylabel("Frequency (MHz)")
+    plt.xlabel("Input")
+    plt.ylim(0)
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "average_freq_gpu.pdf")
+    plt.clf()
+
+
+    plt.xticks(rotation=30)
+    plt.boxplot(freq_all_events, showfliers=False, labels=exp)
+    plt.tight_layout()
+    plt.ylabel("Frequency (MHz)")
+    plt.xlabel("Input")
+    plt.ylim(0)
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "average_freq_during_events_gpu.pdf")
     plt.clf()
 
 def bar_plot_util_gpu(data, args):
@@ -648,11 +833,15 @@ def bar_plot_runtime_cpu(data, args):
     width = 0.5
     bottom = np.zeros(len(exp))
     for i, weight in enumerate(d):
-        plt.bar(exp, weight, width=width, label=areas[i], bottom=bottom)
+        if (len(d) > 1):
+            plt.bar(exp, weight, width=width, label=areas[i], bottom=bottom)
+        else:
+            plt.bar(exp, weight)
         bottom += weight
 
     plt.xticks(rotation=30)
-    plt.legend()
+    if (len(d) > 1):
+        plt.legend()
     plt.ylabel("Runtime (s)")
     plt.xlabel("Input")
     plt.plot()
@@ -736,6 +925,7 @@ def main():
                 lprogram.append(read_data_program(f"{dirpath}/{name_data}" ))
             experiments_program[name] = lprogram
 
+
     if args.experiment == 0:
         bar_plot_energy_cpu(experiments_cpu, args)
         bar_plot_avg_power_cpu(experiments_cpu, args)
@@ -743,7 +933,9 @@ def main():
         bar_plot_runtime_cpu(experiments_cpu, args)
 
         plot_energy_gpu(experiments_gpu, args)
-        bar_plot_average_power_gpu(experiments_gpu, args)
+        box_plot_average_power_gpu(experiments_gpu, experiments_program, args)
+        box_plot_average_freq_gpu(experiments_gpu, args)
+        bar_plot_energy_time_for_events(experiments_gpu, experiments_cpu, experiments_program, args)
 
         bar_plot_energy_total(experiments_cpu, experiments_gpu, experiments_program, args)
         bar_plot_runtime(experiments_cpu, experiments_gpu, args)
@@ -764,7 +956,8 @@ def main():
         bar_plot_energy_total(experiments_cpu, experiments_gpu, experiments_program, args)
         bar_plot_runtime(experiments_cpu, experiments_gpu, args)
 
-        bar_plot_average_power_gpu(experiments_gpu, args)
+        box_plot_average_power_gpu(experiments_gpu, experiments_program, args)
+        box_plot_average_freq_gpu(experiments_gpu, args)
 
         bar_plot_track_paramaters(experiments_program, args)
         bar_plot_avg_freq_cpu(experiments_cpu, args)

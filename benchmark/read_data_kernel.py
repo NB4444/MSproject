@@ -120,6 +120,75 @@ def power_box(data, args):
     plt.savefig(args.output + f"power_boxplot_{args.gpu}.pdf")
     plt.clf()
 
+def graphics_box(data, args):
+    power_list = []
+    labels = []
+    sorted_keys = sort_keys(data.keys())
+    for key in sorted_keys:
+        if len(key) > 10:
+            words = key.split(' ')
+            l = len(words)
+            middle = l//2
+            first = " ".join(words[:middle])
+            last = " ".join(words[middle:])
+            labels.append(f"{first}\n{last}")
+        else:
+            labels.append(key)
+        pow = []
+        for df in data[key]:
+            i = first_higher_then(df['util_gpu'], 5)
+            pow.extend(list(df['graphics'][i:]))
+        power_list.append(pow)
+
+
+
+    for p in power_list:
+        print(f"Mean compute frequency: {np.mean(p)}, Median compute frequency: {np.median(p)}, Min compute frequency: {np.min(p)}, Max compute frequency: {np.max(p)}")
+
+    plt.boxplot(power_list, showfliers=False, labels=labels)
+    plt.title(f"Compute frequency for different kernels for {args.gpu}")
+    plt.xlabel("Different Kernels")
+    plt.ylabel("Compute frequency (MHz)")
+    plt.ylim(0)
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + f"compute_frequency_boxplot_{args.gpu}.pdf")
+    plt.clf()
+
+def memory_box(data, args):
+    power_list = []
+    labels = []
+    sorted_keys = sort_keys(data.keys())
+    for key in sorted_keys:
+        if len(key) > 10:
+            words = key.split(' ')
+            l = len(words)
+            middle = l//2
+            first = " ".join(words[:middle])
+            last = " ".join(words[middle:])
+            labels.append(f"{first}\n{last}")
+        else:
+            labels.append(key)
+        pow = []
+        for df in data[key]:
+            i = first_higher_then(df['util_gpu'], 5)
+            pow.extend(list(df['memory'][i:]))
+        power_list.append(pow)
+
+
+    for p in power_list:
+        print(f"Mean memory frequency: {np.mean(p)}")
+
+    plt.boxplot(power_list, showfliers=False, labels=labels)
+    plt.title(f"Memory frequency for different kernels for {args.gpu}")
+    plt.xlabel("Different Kernels")
+    plt.ylabel("Memory frequency (MHz)")
+    plt.ylim(0)
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + f"memory_frequency_boxplot_{args.gpu}.pdf")
+    plt.clf()
+
 def time_bar(data, args):
     power_list = []
     labels = []
@@ -236,8 +305,6 @@ def main():
     parser.add_argument("--gpu", default="A4000", help="Type of GPU for titles")
     parser.add_argument("--line", default=0, help="Forced line use")
 
-    parser.add_argument("--experiment", type=int, default=0, help="What experiment to create graph for")
-
     args = parser.parse_args()
 
     name_exp = args.input.split("/")[-1] if args.input.split("/")[-1] != '' else args.input.split("/")[-2]
@@ -262,6 +329,8 @@ def main():
     if len(experiments_gpu) < 10 and args.line == 0:
         power_box(experiments_gpu, args)
         time_bar(experiments_gpu, args)
+        memory_box(experiments_gpu, args)
+        graphics_box(experiments_gpu, args)
     else:
         power_line(experiments_gpu, args)
         time_line(experiments_gpu, args)
