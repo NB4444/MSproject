@@ -46,6 +46,144 @@ def power_func():
     # plt.legend()
     # plt.show()
 
+def power_model():
+    dmu = np.array([20, 60, 100, 140, 300])
+    idle = 80
+    max = 300
+    cores = 10752
+    streams = 8
+    # powerA6000 = np.array([96.56324244103033, 104.31696574410243, 118.16806945830271, 130.98906294037735, 143.01341202279326, 165.70648926966473, 185.47145238651296, 217.5334262628919])
+    powerA6000 = np.array([96.56324244103033, 118.16806945830271, 143.01341202279326, 165.70648926966473, 217.5334262628919])
+    compute = np.array([3.1964454896805443, 11.782749444928717, 22.404965017311756, 29.622102444170213, 49.6577630143823])
+    memory = np.array([5.177268875583067, 9.329006817372838, 13.00512917425099, 15.425329557191125, 22.3191768643386])
+    size = np.array([8673.537009578691, 48317.07525085832, 141545.76960284112, 254439.56514935015, 1225983.8488977323])
+    sum_size = np.array([112960.85218616173, 394404.8839404366, 876825.0196780775, 1378841.9268893679, 5121697.880965756])
+    extra_power = powerA6000 - idle
+    print(powerA6000)
+    mod = idle + (max*(compute/100)) * 0.65 + (max*(memory/100)) * 0.6
+    print(mod - powerA6000)
+    print(mod)
+    # print(idle + (max*(6/100)) * 0.65 + (max*(69/100)) * 0.6)
+    # print(idle + (max*(16/100)) * 0.65 + (max*(7.76/100)) * 0.6)
+    # print(idle + (max*(2.94/100)) * 0.65 + (max*(45.48/100)) * 0.6)
+    # print(idle + (max*(9.09/100)) * 0.65 + (max*(53.49/100)) * 0.6)
+
+
+
+    # diff_size = sum_size / sum_size[0]
+    # print(diff_size/8)
+    # mod = idle + extra_power[0] * (diff_size)
+    # print(mod - powerA6000)
+    # print(mod)
+
+    # size_sq = np.sqrt(size)
+
+    # mod = idle + (((extra_power[-1] - extra_power[0]) / (size_sq[-1]-size_sq[0])) * size_sq)
+    # print(mod - powerA6000)
+    # print(mod)
+
+    # sum_size_sq = np.sqrt(sum_size)
+
+    # mod = idle + (((extra_power[-1] - extra_power[0]) / (sum_size_sq[-1]-sum_size_sq[0])) * sum_size_sq)
+    # print(mod - powerA6000)
+    # print(mod)
+
+    # mod = idle + (((extra_power[-1] - extra_power[0]) / (300-20)) * dmu)
+    # print(mod - powerA6000)
+    # print(mod)
+
+    # mod = idle + (((extra_power[-1] - extra_power[0]) / (1225983.8488977323-8673.537009578691)) * size)
+    # print(mod - powerA6000)
+    # print(mod)
+
+
+    # mod = idle + (extra_power[-1] / size_sq[-1]) * size_sq
+    # print(mod - powerA6000)
+    # print(mod)
+
+
+    # print(19 + extra_power * 60/300)
+    # print(39 + extra_power * 140/300)
+    # print(37 + extra_power * 250/300)
+
+    # print(19 + extra_power * 1280/10752)
+    # print(39 + extra_power * 6144/10752)
+    # print(37 + extra_power * 6912/10752)
+
+
+    idle = 19
+    max = 60
+    #     powerA2 = np.array([23.05022378506336, 25.420059552541744, 28.08803248747237, 30.104399796987355, 32.131874884957405, 35.413288082101026, 39.78031785493163, 45.3196376486497]) #60.00 max
+    powerA2 = np.array([23.05022378506336, 28.08803248747237, 32.131874884957405, 35.413288082101026, 45.3196376486497]) #60.00 max
+    compute = np.array([20.335305550640896, 40.892366155937665, 50.78984677342178, 55.67732230352028, 65.54655970510538])
+    memory = np.array([18.177990428167508, 27.113463288885843, 29.378311057790974, 30.091346743743987, 30.930743253926657])
+    size = np.array([8489.472138648724, 48635.289468554365, 140322.3040880863, 255449.4444055122, 1217093.461902101])
+    extra_power = powerA2 - idle
+    print(powerA2)
+    mod = np.array(idle + (max*(compute/100)) * 0.3 + (max*(memory/100)) * 0.5)
+    print(mod - powerA2)
+    print(mod)
+
+    # size_sq = np.sqrt(size)
+
+    # mod = idle + (((extra_power[-1] - extra_power[0]) / (size_sq[-1]-size_sq[0])) * size_sq)
+    # print(mod - powerA2)
+    # print(mod)
+
+    # sum_size_sq = np.sqrt(sum_size)
+
+    # mod = idle + (((extra_power[-1] - extra_power[0]) / (sum_size_sq[-1]-sum_size_sq[0])) * sum_size_sq)
+    # print(mod - powerA2)
+    # print(mod)
+
+    idle = 37
+    max = 250
+    #     [66.84023795399116, 70.10372223432057, 74.90626433401941, 80.8033836370964, 84.68810099633825, 96.03202304502588, 113.3332478303856, 138.53872289602504]
+    powerA100 = np.array( [66.84023795399116, 74.90626433401941, 84.68810099633825, 96.03202304502588, 138.53872289602504]) #60.00 max
+    compute = np.array([2.2993137884453896, 9.274248022489799, 19.31728409021663, 26.93550353746028, 47.99918822432627])
+    memory = np.array([2.554871128715937, 5.920864065927068, 9.80361976982167, 12.345905225322749, 18.733627332209178])
+    size = np.array([8328.674932768386, 47011.988039955395, 141780.80550603502, 259333.00217362418, 1233195.447804518])
+    extra_power = powerA100 - idle
+    print(powerA100)
+    mod = np.array(idle + (max*(compute/100)) * 0.7 + (max*(memory/100)) * 0.9)
+    print(mod - powerA100)
+    print(mod)
+
+    # size_sq = np.sqrt(size)
+
+    # mod = idle + (((extra_power[-1] - extra_power[0]) / (size_sq[-1]-size_sq[0])) * size_sq)
+    # print(mod - powerA100)
+    # print(mod)
+
+    # sum_size_sq = np.sqrt(sum_size)
+
+    # mod = idle + (((extra_power[-1] - extra_power[0]) / (sum_size_sq[-1]-sum_size_sq[0])) * sum_size_sq)
+    # print(mod - powerA100)
+    # print(mod)
+
+    idle = 39
+    max = 140
+    #     [69.19915148538834, 73.85515574887992, 88.80004531127683, 108.11312535830946, 119.39331300253284, 127.34891247103539, 135.39999663238834, 131.27172270949356]
+    powerA4000 = np.array( [69.19915148538834, 88.80004531127683, 119.39331300253284, 127.34891247103539, 131.27172270949356]) #60.00 max
+    compute = np.array([6.009313241830655, 19.159966831940494, 32.130397652096946, 40.44011046930511, 59.571400604067996])
+    memory = np.array([7.089435103613379, 13.165661158048474, 17.81759089595966, 20.41592983611106, 26.622750656039745])
+    size = np.array([8677.186420002981, 47309.35299576395, 139786.72815907662, 261986.8260136147, 1238309.3528161237])
+    extra_power = powerA4000 - idle
+    # mod = np.array(idle + (max*(compute/100)) * 1.3 + (max*(memory/100)) * 0.7)
+    # print(mod - powerA4000)
+    # print(mod)
+    size_sq = np.sqrt(size)
+
+    # mod = idle + (((extra_power[-1] - extra_power[0]) / (size_sq[-1]-size_sq[0])) * size_sq)
+    # print(mod - powerA4000)
+    # print(mod)
+
+    # sum_size_sq = np.sqrt(sum_size)
+
+    # mod = idle + (((extra_power[2] - extra_power[0]) / (sum_size_sq[2]-sum_size_sq[0])) * sum_size_sq)
+    # print(mod - powerA4000)
+    # print(mod)
+
 def diff(pred, measured):
     calc = (pred-measured)/measured
     return np.mean(np.abs(calc)), np.std(calc)
@@ -223,5 +361,6 @@ def time_model():
 # gpu_model()
 # cpu_model()
 # power_func()
+power_model()
 
-time_model()
+# time_model()

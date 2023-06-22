@@ -141,6 +141,56 @@ def read_data_gpu(input):
 def sort_keys(l):
     return sorted(l, key=lambda s: int(''.join(filter(str.isdigit, s))))
 
+def cpu_plots(input_list, args):
+    labels = []
+    power_mean =  []
+    power_mean_std =  []
+    for input in input_list:
+        gpu, cpu, program = input
+        sorted_keys = sort_keys(cpu.keys())
+        inner_keys = cpu[sorted_keys[0]][0].keys()
+        exp = []
+        all_mean = []
+        all_std = []
+
+        for key in sorted_keys:
+            exp.append(key)
+            gpu_type = program[key][0]['gpu']
+            power_all = []
+            power_std = []
+            for k in inner_keys:
+                l = [dic[k].power_all for dic in cpu[key] if dic[k].energy_all != 281475000000000.0]
+                power_all.append(np.mean(l))
+                power_std.append(np.std(l))
+
+            all_mean.append(np.mean(power_all))
+            all_std.append(np.mean(power_std))
+
+        labels.append(gpu_type.split('-')[0])
+        power_mean.append(all_mean)
+        power_mean_std.append(all_std)
+
+
+    length = len(exp)
+    width = 0.8/len(power_mean)
+    ind = np.arange(length)
+    ind_mean = (np.arange(length) - np.mean(np.arange(length)))*width
+    for i, weight in enumerate(power_mean):
+        plt.bar(ind-ind_mean[i], \
+                    height=weight, \
+                    width=width, \
+                    yerr=power_mean_std[i], \
+                    label=labels[i])
+    plt.xticks(ind, exp, rotation=30)
+    plt.ylabel("Average Power")
+    plt.xlabel("Input")
+    plt.legend()
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "average_power_cpu.pdf")
+    plt.clf()
+
+
 def bar_plot_energy_time_for_events(input_list, args):
     energy = []
     time = []
@@ -300,6 +350,7 @@ def main():
         input_list.append((experiments_gpu, experiments_cpu, experiments_program))
 
     bar_plot_energy_time_for_events(input_list, args)
+    cpu_plots(input_list, args)
 
 
 

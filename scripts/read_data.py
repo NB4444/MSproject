@@ -542,6 +542,8 @@ def bar_plot_track_paramaters(program, args):
         mean_track.append(np.mean(runs))
         std_track.append(np.std(runs))
 
+    print(f"Track parameters: {mean_track}")
+
     events = np.array(events)
     width = 0.5
 

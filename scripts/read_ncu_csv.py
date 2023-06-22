@@ -34,6 +34,13 @@ def read_data_gpu(input):
     df_mean = df.groupby(df['function_name']).aggregate("mean")
     df_std = df.groupby(df['function_name']).aggregate("std")
     print(df_mean)
+    weight = np.array(df_mean['grid_size']) / np.sum(df_mean['grid_size'])
+    print(weight)
+    print(f"Size weighted: {np.average(np.array(df_mean['grid_size'])*np.array(df_mean['block_size']), weights=weight)}")
+    print(f"Size sum: {np.average(np.array(df_mean['grid_size'])*np.sum(df_mean['block_size']))}")
+    print(f"Compute weighted: {np.average(np.array(df_mean['compute_throughput']), weights=weight)}")
+    print(f"Memory weighted: {np.average(np.array(df_mean['memory_throughput']), weights=weight)}")
+
 
     return (df_mean, df_std), device_name
 
@@ -182,6 +189,15 @@ def bar_plot_cycles(args, data, device_name):
     plt.plot()
     plt.tight_layout()
     plt.savefig(args.output + "bar_cycles_per_core_plot.pdf")
+    plt.clf()
+
+    create_bar_plot(inverted_size_mean / cores, np.zeros(len(inverted_size_std)), sorted_keys, labels)
+    plt.ylabel("(Grid size * Block size) / # cores")
+    plt.xlabel("Input")
+    plt.yscale('log')
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "bar_size_per_core_plot.pdf")
     plt.clf()
 
 def main():

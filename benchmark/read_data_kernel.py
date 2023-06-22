@@ -6,6 +6,9 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
+def normalize(low, high, list):
+    return ((np.array(list) - low) / (high-low)) * 100
+
 def get_iterations_change(list):
     first = list[0]
     for i, l in enumerate(list[1:]):
@@ -298,6 +301,57 @@ def power_line(data, args):
     plt.savefig(args.output + f"power_lineplot_{args.gpu}.pdf")
     plt.clf()
 
+def power_time_line(data, args):
+    power_list = []
+    labels = []
+    idle_power_list = []
+    time_list = []
+
+    for key in data.keys():
+        labels.append(int(key))
+        pow = []
+        t = []
+        for df in data[key]:
+            i = first_higher_then(df['util_gpu'], 5)
+            pow.append(np.mean(df['power'][i:]))
+            t.append((list(df['duration'])[-1])/1000)
+            idle_power_list.append(df['power'][0])
+        power_list.append(pow)
+        time_list.append(t)
+
+    if args.gpu == "A4000":
+        max_power = 140
+    if args.gpu == "A6000":
+        max_power = 300
+    if args.gpu == "A2":
+        max_power = 60
+    if args.gpu == "A100":
+        max_power = 250
+
+    idle = np.mean(idle_power_list)
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.axhline(y=max_power, color='black', linestyle='--', label="Maximum Power")
+    ax.axhline(y=idle, color='gray', linestyle='--', label="Averaged Idle Power")
+    ax.set_xlabel("Number of Streams")
+    ax.set_ylabel("Time per stream (s)")
+    ax.set_ylim(0)
+    time_per_stream = np.array(time_list).flatten() / np.array(labels)
+    ax.scatter(labels, time_per_stream, c='blue', label="Time per stream")
+    # plt.title(f"Power consumption for different kernels for {args.gpu}")
+    # plt.xlabel("Number of FP32 instruction per 1 FP64 instruction")
+
+    ax2 = ax.twinx()
+    ax2.set_ylim(ax.get_ylim())
+    ax2.set_ylabel("Power (Watt)")
+    ax2.scatter(labels, power_list, c='red', label="GPU Power")
+    # fig.legend(bbox_to_anchor=(0.85, 0.6))
+    fig.legend(loc="center")
+    fig.tight_layout()
+    fig.savefig(args.output + f"power_time_lineplot_{args.gpu}.pdf")
+    fig.clf()
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True, help="Name of directory of the data")
@@ -333,6 +387,7 @@ def main():
         graphics_box(experiments_gpu, args)
     else:
         power_line(experiments_gpu, args)
+        power_time_line(experiments_gpu, args)
         time_line(experiments_gpu, args)
 
 
