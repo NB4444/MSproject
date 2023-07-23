@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 from datetime import datetime
+import matplotlib.colors as mcolors
 
 def get_iterations_change(list):
     first = list[0]
@@ -154,7 +155,16 @@ def cpu_plots(input_list, args):
         all_std = []
 
         for key in sorted_keys:
-            exp.append(key)
+            s = key.split("_")
+            if s[0] == "threads":
+                xlabel = "Number of Streams"
+                exp.append(int(s[1]))
+            if s[0] == "gpu":
+                xlabel = "GPUs"
+                exp.append(s[1])
+            else:
+                xlabel = "Input"
+                exp.append(key)
             gpu_type = program[key][0]['gpu']
             power_all = []
             power_std = []
@@ -166,14 +176,16 @@ def cpu_plots(input_list, args):
             all_mean.append(np.mean(power_all))
             all_std.append(np.mean(power_std))
 
-        labels.append(gpu_type.split('-')[0])
+        if args.label == None:
+            labels.append(gpu_type.split('-')[0])
         power_mean.append(all_mean)
         power_mean_std.append(all_std)
 
-
-    length = len(exp)
+    if args.label != None:
+        labels = args.label
+    length = len(power_mean)
     width = 0.8/len(power_mean)
-    ind = np.arange(length)
+    ind = np.arange(len(exp))
     ind_mean = (np.arange(length) - np.mean(np.arange(length)))*width
     for i, weight in enumerate(power_mean):
         plt.bar(ind-ind_mean[i], \
@@ -182,8 +194,8 @@ def cpu_plots(input_list, args):
                     yerr=power_mean_std[i], \
                     label=labels[i])
     plt.xticks(ind, exp, rotation=30)
-    plt.ylabel("Average Power")
-    plt.xlabel("Input")
+    plt.ylabel("Average Power (Watt)")
+    plt.xlabel(xlabel)
     plt.legend()
     plt.plot()
     plt.tight_layout()
@@ -193,25 +205,46 @@ def cpu_plots(input_list, args):
 
 def bar_plot_energy_time_for_events(input_list, args):
     energy = []
+    energy_gpu_full = []
     time = []
     events = []
     labels = []
+    cpu_energy = []
+    gpu_power_all = []
     for input in input_list:
         gpu, cpu, program = input
         sorted_keys = sort_keys(gpu.keys())
+        inner_keys = cpu[sorted_keys[0]][0].keys()
         exp = []
         energy_gpu_mean = []
+        energy_gpu_mean_full = []
         time_gpu_mean = []
         events_list = []
         mean_track = []
+        cpu_mean = []
+        gpu_p = []
 
         for key in sorted_keys:
-            exp.append(key)
+            s = key.split("_")
+            if s[0] == "threads":
+                xlabel = "Number of Streams"
+                exp.append(int(s[1]))
+            if s[0] == "gpu":
+                xlabel = "GPUs"
+                exp.append(s[1])
+            else:
+                xlabel = "Input"
+                exp.append(key)
             energy_gpu = []
+            energy_gpu_f = []
             time_list = []
+            gp = []
+            energy_cpu = 0
             mean_track.append(np.mean([run["track_parameters"] for run in program[key]]))
             events_list.append(program[key][0]["events"])
             gpu_type = program[key][0]['gpu']
+            for inner_key in inner_keys:
+                energy_cpu += np.mean([dic[inner_key].energy_all for dic in cpu[key] if dic[inner_key].energy_all != 281475000000000.0])
             for df in gpu[key]:
                 if not "util_gpu" in df:
                     change_i = get_iterations_change(df["graphics"])
@@ -219,15 +252,59 @@ def bar_plot_energy_time_for_events(input_list, args):
                         change_i = get_iterations_change_percentage(df["power"], 0.1)
                 else:
                     change_i = first_higher_then(df["util_gpu"], 5)
+                gp.append(np.mean(list(df['power'])[change_i:]))
                 energy_gpu.append(calculate_energy(df, change_i))
+                energy_gpu_f.append(calculate_energy(df, 0))
                 time_list.append((list(df['duration'])[-1] - list(df['duration'])[change_i]) / 1000)
 
+            gpu_p.append(np.mean(gp))
             energy_gpu_mean.append(np.mean(energy_gpu))
+            energy_gpu_mean_full.append(np.mean(energy_gpu_f))
             time_gpu_mean.append(np.mean(time_list))
+            cpu_mean.append(energy_cpu)
         energy.append(energy_gpu_mean)
+        energy_gpu_full.append(energy_gpu_mean_full)
+        cpu_energy.append(cpu_mean)
         time.append(time_gpu_mean)
         events.append(events_list)
-        labels.append(gpu_type.split('-')[0])
+        if args.label == None:
+            labels.append(gpu_type.split('-')[0])
+        gpu_power_all.append(gpu_p)
+
+    if args.label != None:
+        labels = args.label
+    colors = list(mcolors.BASE_COLORS.keys())
+    width = 0.8/len(energy_gpu_full)
+    ind = np.arange(len(exp))
+    ind_mean = (np.arange(len(energy_gpu_full)) - np.mean(np.arange(len(energy_gpu_full))))*width
+    for i, weight in enumerate(energy_gpu_full):
+        plt.bar(ind-ind_mean[i], height=cpu_energy[i], width=width, label=f"CPU {labels[i]}")
+        plt.bar(ind-ind_mean[i], bottom=cpu_energy[i], height=(weight+np.array(cpu_energy[i])), width=width, label=f"GPU {labels[i]}")
+    plt.xticks(ind, exp, rotation=30)
+    plt.ylabel("Energy (J)")
+    plt.xlabel(xlabel)
+    plt.legend()
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "energy_full_application.pdf")
+    plt.clf()
+
+
+    width = 0.8/len(energy_gpu_full)
+    ind = np.arange(len(exp))
+    ind_mean = (np.arange(len(energy_gpu_full)) - np.mean(np.arange(len(energy_gpu_full))))*width
+    for i, weight in enumerate(energy_gpu_full):
+        cpu_per_event = cpu_energy[i] / np.array(events[i])
+        plt.bar(ind-ind_mean[i], height=cpu_per_event, width=width, label=f"CPU {labels[i]}")
+        plt.bar(ind-ind_mean[i], bottom=cpu_per_event, height=(weight / np.array(events[i]) +cpu_per_event), width=width, label=f"GPU {labels[i]}")
+    plt.xticks(ind, exp, rotation=30)
+    plt.ylabel("Energy per event (J/event)")
+    plt.xlabel(xlabel)
+    plt.legend()
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "energy_per_event_full_application.pdf")
+    plt.clf()
 
     width = 0.8/len(energy)
     ind = np.arange(len(exp))
@@ -236,11 +313,25 @@ def bar_plot_energy_time_for_events(input_list, args):
         plt.bar(ind-ind_mean[i], height=(weight/np.array(events[i])), width=width, label=labels[i])
     plt.xticks(ind, exp, rotation=30)
     plt.ylabel("Energy per event (J/event)")
-    plt.xlabel("Input")
+    plt.xlabel(xlabel)
     plt.legend()
     plt.plot()
     plt.tight_layout()
     plt.savefig(args.output + "energy_gpu_events_per_event.pdf")
+    plt.clf()
+
+    width = 0.8/len(gpu_power_all)
+    ind = np.arange(len(exp))
+    ind_mean = (np.arange(len(gpu_power_all)) - np.mean(np.arange(len(gpu_power_all))))*width
+    for i, weight in enumerate(gpu_power_all):
+        plt.bar(ind-ind_mean[i], height=(weight), width=width, label=labels[i])
+    plt.xticks(ind, exp, rotation=30)
+    plt.ylabel("Average Power (Watt)")
+    plt.xlabel(xlabel)
+    plt.legend()
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "avg_power.pdf")
     plt.clf()
 
     width = 0.8/len(energy)
@@ -250,7 +341,7 @@ def bar_plot_energy_time_for_events(input_list, args):
         plt.bar(ind-ind_mean[i], height=(weight/weight[0]), width=width, label=labels[i])
     plt.xticks(ind, exp, rotation=30)
     plt.ylabel("Normalized energy")
-    plt.xlabel("Input")
+    plt.xlabel(xlabel)
     plt.legend()
     plt.plot()
     plt.tight_layout()
@@ -264,7 +355,7 @@ def bar_plot_energy_time_for_events(input_list, args):
         plt.bar(ind-ind_mean[i], height=(weight/np.array(events[i])), width=width, label=labels[i])
     plt.xticks(ind, exp, rotation=30)
     plt.ylabel("Runtime per event (s/event)")
-    plt.xlabel("Input")
+    plt.xlabel(xlabel)
     plt.legend()
     plt.plot()
     plt.tight_layout()
@@ -278,7 +369,7 @@ def bar_plot_energy_time_for_events(input_list, args):
         plt.bar(ind-ind_mean[i], height=(weight/weight[0]), width=width, label=labels[i])
     plt.xticks(ind, exp, rotation=30)
     plt.ylabel("Normalized Runtime")
-    plt.xlabel("Input")
+    plt.xlabel(xlabel)
     plt.legend()
     plt.plot()
     plt.tight_layout()
@@ -293,7 +384,7 @@ def bar_plot_energy_time_for_events(input_list, args):
         plt.bar(ind-ind_mean[i], height=(weight/np.array(mean_track)), width=width, label=labels[i])
     plt.xticks(ind, exp, rotation=30)
     plt.ylabel("Runtime per track (s/event)")
-    plt.xlabel("Input")
+    plt.xlabel(xlabel)
     plt.legend()
     plt.plot()
     plt.tight_layout()
@@ -305,11 +396,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", required=True, nargs='+', help="Name of directories of the data")
     parser.add_argument("--output", default="graphs/", help="Name of directory of the graph")
+    parser.add_argument("--label", nargs='+', default=None, help="Label names if necessary")
 
     parser.add_argument("--experiment", type=int, default=0, help="What experiment to create graph for")
 
     args = parser.parse_args()
-
     now = datetime.now()
     now_str = now.strftime("%Y-%m-%d_%H:%M:%S")
 

@@ -106,7 +106,7 @@ def norm_power_line(input_list, args):
         norm_list = normalize(idle, get_max_power(gpu_type), sort_list)
 
         # plt.scatter(sort_labels, norm_list, label=gpu_type)
-        plt.plot(sort_labels, norm_list, '-o', label=gpu_type)
+        plt.plot(sort_labels, norm_list, '-o', label=f"{gpu_type} Max Power: {get_max_power(gpu_type)} Idle Power: {idle:.2f}")
 
     plt.xlabel("Number of Streams")
     plt.ylabel("Normalized Average Power (%)")
@@ -114,6 +114,14 @@ def norm_power_line(input_list, args):
     plt.legend()
     plt.tight_layout()
     plt.savefig(args.output + f"power_lineplot.pdf")
+    # plt.clf()
+
+    plt.xlabel("Number of FP32 instruction per 1 FP64 instruction")
+    plt.ylabel("Normalized Average Power (%)")
+    plt.ylim(0, 100)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(args.output + f"power_inst_lineplot.pdf")
     plt.clf()
 
 def time_line(input_list, args):

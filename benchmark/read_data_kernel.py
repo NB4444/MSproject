@@ -122,6 +122,17 @@ def power_box(data, args):
     plt.tight_layout()
     plt.savefig(args.output + f"power_boxplot_{args.gpu}.pdf")
     plt.clf()
+    #
+    norm_power = [normalize(idle, max_power, p) for p in power_list]
+    plt.boxplot(norm_power, showfliers=False, labels=labels)
+    plt.title(f"Power consumption for different kernels for {args.gpu}")
+    plt.xlabel("Different Kernels")
+    plt.ylabel("Normalized Power (%)")
+    plt.ylim(0, 100)
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + f"power_norm_boxplot_{args.gpu}.pdf")
+    plt.clf()
 
 def graphics_box(data, args):
     power_list = []
@@ -257,6 +268,17 @@ def time_line(data, args):
     plt.savefig(args.output + f"time_per_stream_lineplot_{args.gpu}.pdf")
     plt.clf()
 
+    plt.scatter(labels, np.array(power_list)/np.array(labels))
+    # plt.title(f"Power consumption for different kernels for {args.gpu}")
+    plt.xlabel("Number of FP32 instruction per 1 FP64 instruction")
+    # plt.xlabel("Number of Streams")
+    plt.ylabel("Time per stream(s)")
+    plt.ylim(0)
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + f"time_per_stream_lineplot_{args.gpu}.pdf")
+    plt.clf()
+
 def power_line(data, args):
     power_list = []
     labels = []
@@ -299,6 +321,29 @@ def power_line(data, args):
     plt.plot()
     plt.tight_layout()
     plt.savefig(args.output + f"power_lineplot_{args.gpu}.pdf")
+    plt.clf()
+
+    power_list = np.array(power_list).flatten()
+    sort_list = [x for _, x in sorted(zip(labels, power_list))]
+    sort_labels = sorted(labels)
+
+    norm_list = normalize(idle, max_power, sort_list)
+    plt.plot(sort_labels, norm_list, '-o')
+    plt.xlabel("Number of FP32 instruction per 1 FP64 instruction")
+    plt.ylabel("Normalized Average Power (%)")
+    plt.ylim(0, 100)
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + f"power_inst_norm_lineplot_{args.gpu}.pdf")
+    plt.clf()
+
+    plt.plot(sort_labels, norm_list, '-o')
+    plt.xlabel("Number of Streams")
+    plt.ylabel("Normalized Average Power (%)")
+    plt.ylim(0, 100)
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + f"power_stream_norm_lineplot_{args.gpu}.pdf")
     plt.clf()
 
 def power_time_line(data, args):

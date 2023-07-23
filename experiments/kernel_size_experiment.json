@@ -1,0 +1,11 @@
+{
+    "experiment_name": "kernel_size_experiment",
+    "time_limit": 15,
+    "runs": 5,
+    "gpu": ["A4000", "A6000", "A2", "A100"],
+    "threads": 1,
+    "exec": "traccc/build/bin/traccc_throughput_mt_cuda",
+    "events": 1000,
+    "input_dir": "tml_full/ttbar_mu300",
+    "marker": false
+}

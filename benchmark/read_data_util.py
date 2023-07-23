@@ -139,14 +139,16 @@ def power_normalized_average_runs(data, args, max_power):
 
     part_size = len(power_list) // 3
     idle_power = np.mean(idle_power_list)
+    print(idle_power, max_power)
 
     norm_list = normalize(idle_power, max_power, power_list)
-    plt.figure(figsize=(4,3))
+    # plt.figure(figsize=(4,3))
     plt.scatter(perc_sm[:part_size], norm_list[:part_size], c='r', label=f"{threads[0]} threads per block")
     plt.scatter(perc_sm[part_size:part_size*2], norm_list[part_size:part_size*2], c='g', label=f"{threads[part_size]} threads per block")
     plt.scatter(perc_sm[part_size*2:], norm_list[part_size*2:], c='b', label=f"{threads[part_size*2]} threads per block")
     plt.legend()
     plt.ylim(0, 100)
+    plt.xlim(0, 100)
     plt.xlabel("Utilization of the SMs (%)")
     plt.ylabel("Normalized Average Power (%)")
     plt.plot()
@@ -159,6 +161,7 @@ def power_normalized_average_runs(data, args, max_power):
     plt.scatter(perc_cores[part_size*2:], norm_list[part_size*2:], c='b', label=f"{threads[part_size*2]} threads per block")
     plt.legend()
     plt.ylim(0, 100)
+    plt.xlim(0, 100)
     plt.xlabel("Utilization of the cores (%)")
     plt.ylabel("Normalized Average Power (%)")
     plt.plot()

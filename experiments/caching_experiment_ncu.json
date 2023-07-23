@@ -1,0 +1,11 @@
+{
+    "experiment_name": "caching_experiment_ncu",
+    "time_limit": 15,
+    "runs": 1,
+    "gpu": "A4000",
+    "threads": 8,
+    "exec": "traccc/build/bin/traccc_throughput_mt_cuda",
+    "events": 100,
+    "input_dir": "tml_full/ttbar_mu300",
+    "marker": false
+}

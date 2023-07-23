@@ -1,0 +1,12 @@
+{
+    "experiment_name": "cache_experiment_loaded_events_1",
+    "time_limit": 15,
+    "runs": 5,
+    "gpu": ["A4000", "A6000", "A2", "A100"],
+    "threads": 8,
+    "exec": "traccc/build/bin/traccc_throughput_mt_cuda",
+    "events": 10000,
+    "input_dir": "tml_full/ttbar_mu300",
+    "marker": false,
+    "loaded_events": 1
+}

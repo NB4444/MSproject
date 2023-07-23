@@ -353,14 +353,24 @@ def time_model():
 
     # print(A4000_time / A100_time)
     # print((A4000_time) / (A6000_time))
-    print(A2_time / A4000_time)
-    print(A100_time / A4000_time)
+    # print(A4000_time / 1900 * 6144)
+    # print(A6000_time / 1900 * 10752)
+    # print(A2_time / 1750 * 1280)
+    # print(A100_time / 1400 * 6912)
+
+    # print(A4000_time / mu)
+    # print(A6000_time / mu)
+    # print(A2_time / mu)
+    # print(A100_time / mu)
+    for i in range(len(A4000_time)-1):
+        print(A4000_time[i+1]-A4000_time[i], A6000_time[i+1]-A6000_time[i], A2_time[i+1]-A2_time[i], A100_time[i+1]-A100_time[i])
+        print("mu", (A4000_time[i+1]-A4000_time[i]) / (mu[i+1]-mu[i]), (A6000_time[i+1]-A6000_time[i]) / (mu[i+1]-mu[i]), (A2_time[i+1]-A2_time[i]) / (mu[i+1]-mu[i]), (A100_time[i+1]-A100_time[i]) / (mu[i+1]-mu[i]))
 
 
 
 # gpu_model()
 # cpu_model()
 # power_func()
-power_model()
+# power_model()
 
-# time_model()
+time_model()
