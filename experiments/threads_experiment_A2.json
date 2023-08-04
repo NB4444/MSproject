@@ -1,0 +1,12 @@
+{
+    "experiment_name": "threads_experiment_A2",
+    "time_limit": 15,
+    "runs": 5,
+    "gpu": "A2",
+    "threads": [1, 2, 4, 8, 12, 16, 20, 24],
+    "exec": "traccc/build/bin/traccc_throughput_mt_cuda",
+    "events": 10000,
+    "input_dir": "tml_full/ttbar_mu300",
+    "marker": true,
+    "nodes": "node016"
+}

@@ -146,6 +146,7 @@ def cpu_plots(input_list, args):
     labels = []
     power_mean =  []
     power_mean_std =  []
+    all_freq = []
     for input in input_list:
         gpu, cpu, program = input
         sorted_keys = sort_keys(cpu.keys())
@@ -153,13 +154,14 @@ def cpu_plots(input_list, args):
         exp = []
         all_mean = []
         all_std = []
+        freq = []
 
         for key in sorted_keys:
             s = key.split("_")
             if s[0] == "threads":
-                xlabel = "Number of Streams"
+                xlabel = "Number of Streams/Threads"
                 exp.append(int(s[1]))
-            if s[0] == "gpu":
+            elif s[0] == "gpu":
                 xlabel = "GPUs"
                 exp.append(s[1])
             else:
@@ -168,23 +170,27 @@ def cpu_plots(input_list, args):
             gpu_type = program[key][0]['gpu']
             power_all = []
             power_std = []
+            f = []
             for k in inner_keys:
                 l = [dic[k].power_all for dic in cpu[key] if dic[k].energy_all != 281475000000000.0]
                 power_all.append(np.mean(l))
                 power_std.append(np.std(l))
+                f.append(np.mean([dic[k].clocks for dic in cpu[key]]))
 
             all_mean.append(np.mean(power_all))
             all_std.append(np.mean(power_std))
+            freq.append(np.mean(f))
 
         if args.label == None:
             labels.append(gpu_type.split('-')[0])
         power_mean.append(all_mean)
         power_mean_std.append(all_std)
+        all_freq.append(freq)
 
     if args.label != None:
         labels = args.label
     length = len(power_mean)
-    width = 0.8/len(power_mean)
+    width = 0.8/length
     ind = np.arange(len(exp))
     ind_mean = (np.arange(length) - np.mean(np.arange(length)))*width
     for i, weight in enumerate(power_mean):
@@ -200,6 +206,20 @@ def cpu_plots(input_list, args):
     plt.plot()
     plt.tight_layout()
     plt.savefig(args.output + "average_power_cpu.pdf")
+    plt.clf()
+
+    for i, weight in enumerate(all_freq):
+        plt.bar(ind-ind_mean[i], \
+                    height=weight, \
+                    width=width, \
+                    label=labels[i])
+    plt.xticks(ind, exp, rotation=30)
+    plt.ylabel("Average Frequency (Mhz)")
+    plt.xlabel(xlabel)
+    plt.legend()
+    plt.plot()
+    plt.tight_layout()
+    plt.savefig(args.output + "average_frequency_cpu.pdf")
     plt.clf()
 
 
@@ -229,7 +249,7 @@ def bar_plot_energy_time_for_events(input_list, args):
             if s[0] == "threads":
                 xlabel = "Number of Streams"
                 exp.append(int(s[1]))
-            if s[0] == "gpu":
+            elif s[0] == "gpu":
                 xlabel = "GPUs"
                 exp.append(s[1])
             else:

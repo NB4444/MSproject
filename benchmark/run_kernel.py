@@ -48,6 +48,11 @@ ncu --set full -o {output_dir}profile_{last_dir_name}_{i} ./{program} {numBlocks
                 exp = f"""
 nsys profile --output={output_dir}report_{last_dir_name}_{i}.nsys-rep ./{program} {numBlocks} {numThreads} {num_runs} {n if n is not None else ""} {m if m is not None else ""}
                 """
+            elif type == 3:
+                exp = f"""
+nvidia-smi --query-gpu=index,timestamp,power.draw,clocks.sm,clocks.mem,clocks.gr,utilization.gpu,utilization.memory --format=csv --id=0 -lms 1 -f {output_dir}gpu{i}.csv &
+likwid-perfctr -C { create_core_string(numThreads) } -g ENERGY -o {output_dir}cpu{i}.csv ./{program} {numBlocks} {numThreads} {num_runs} {n if n is not None else ""} {m if m is not None else ""}
+                """
             else:
                 exp = ""
 
@@ -368,6 +373,31 @@ def experiment_comp_float_streams(args, output, total_sm, cores_per_sm):
         run(1, "benchmark_compute_float_streams", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=10000000000, n=i)
         run(1, "benchmark_compute_float_streams", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=10000000000, n=i, type=2)
 
+def experiment_comp_float_streams_cpu(args, output, total_sm, cores_per_sm):
+    for i in range(1, 20):
+        name = f"{i}"
+        output_dir = f"{output}{name}/"
+        os.mkdir(output_dir)
+        output_dir = output_dir.replace(' ', '\ ')
+        run(1, "benchmark_compute_float_streams", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=10000000000, n=i, type=3)
+
+def experiment_comp_float_streams_cpu_threads(args, output, total_sm, cores_per_sm):
+    for i in range(1, 20):
+        name = f"{i}"
+        output_dir = f"{output}{name}/"
+        os.mkdir(output_dir)
+        output_dir = output_dir.replace(' ', '\ ')
+        run(1, "benchmark_compute_float_streams_threads", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=10000000000, n=i, type=3)
+
+
+def experiment_comp_float_cpu_threads(args, output, total_sm, cores_per_sm):
+    for i in range(1, 20):
+        name = f"{i}"
+        output_dir = f"{output}{name}/"
+        os.mkdir(output_dir)
+        output_dir = output_dir.replace(' ', '\ ')
+        run(1, "benchmark_compute_float_threads", node=args.node, experiment=name, output_dir=output_dir, filename=f"run", gpu=args.gpu, numBlocks=total_sm, numThreads=cores_per_sm, num_runs=1000000000, n=i, type=3)
+
 
 def experiment_comp_memory_streams(args, output, total_sm, cores_per_sm):
     for i in range(1, 20):
@@ -487,6 +517,18 @@ def main():
         output = f"comp_memory_offsets3_{args.gpu}_{now_str}/"
         os.mkdir(output)
         experiment_mem_stride3(args, output, total_sm, cores_per_sm)
+    elif args.experiment == 14:
+        output = f"comp_float_streams_cpu_{args.gpu}_{now_str}/"
+        os.mkdir(output)
+        experiment_comp_float_streams_cpu(args, output, total_sm, cores_per_sm)
+    elif args.experiment == 15:
+        output = f"comp_float_streams_cpu_threads_{args.gpu}_{now_str}/"
+        os.mkdir(output)
+        experiment_comp_float_streams_cpu_threads(args, output, total_sm, cores_per_sm)
+    elif args.experiment == 16:
+        output = f"comp_float_cpu_threads_{args.gpu}_{now_str}/"
+        os.mkdir(output)
+        experiment_comp_float_cpu_threads(args, output, total_sm, cores_per_sm)
 
 
 
